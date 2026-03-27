@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:background="@color/grey_200"
+    android:layout_margin="4dp">
+
+    <TextView
+        android:id="@+id/tvConstName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="a"
+        android:textSize="18sp"
+        android:layout_gravity="center_vertical"/>
+
+    <EditText
+        android:id="@+id/etConstValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:inputType="numberDecimal|numberSigned"
+        android:text="0.0"/>
+
+    <Button
+        android:id="@+id/btnDeleteConst"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Удалить"
+        android:backgroundTint="#FF4444"/>
+</LinearLayout>

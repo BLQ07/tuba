@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="file:///android_asset/katex/katex.min.css">
+    <script src="file:///android_asset/katex/katex.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 8px;
+            background: #f5f5f5;
+            font-family: monospace;
+        }
+        #editor {
+            width: 100%;
+            min-height: 150px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            background: white;
+            font-size: 16px;
+            outline: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        #formula {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            font-size: 1.2em;
+            text-align: center;
+            min-height: 60px;
+        }
+        [placeholder]:empty:before {
+            content: attr(placeholder);
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+<div id="editor" contenteditable="true" placeholder="Введите выражение..."></div>
+<div id="formula"></div>
+<script>
+    var editor = document.getElementById('editor');
+    var formulaDiv = document.getElementById('formula');
+
+    function renderFromEditor() {
+        var text = editor.innerText || editor.textContent;
+        var latex = text
+            .replace(/sin\(/g, '\\sin(')
+            .replace(/cos\(/g, '\\cos(')
+            .replace(/tan\(/g, '\\tan(')
+            .replace(/log\(/g, '\\log(')
+            .replace(/ln\(/g, '\\ln(')
+            .replace(/sqrt\(/g, '\\sqrt(')
+            .replace(/\*/g, '\\cdot ')
+            .replace(/π/g, '\\pi ')
+            .replace(/\^/g, '^{ }');
+
+        try {
+            katex.render(latex, formulaDiv, {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            formulaDiv.innerText = 'Ошибка: ' + e.message;
+        }
+        if (window.Android) {
+            Android.onTextChanged(text);
+        }
+    }
+
+    editor.addEventListener('input', renderFromEditor);
+
+    function insertText(text) {
+        var selection = window.getSelection();
+        if (!selection.rangeCount) {
+            editor.appendChild(document.createTextNode(text));
+        } else {
+            var range = selection.getRangeAt(0);
+            range.deleteContents();
+            var node = document.createTextNode(text);
+            range.insertNode(node);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        editor.dispatchEvent(new Event('input'));
+    }
+
+    function deleteChar() {
+        var selection = window.getSelection();
+        if (selection.rangeCount) {
+            var range = selection.getRangeAt(0);
+            if (range.collapsed) {
+                var node = range.startContainer;
+                var offset = range.startOffset;
+                if (offset > 0) {
+                    range.setStart(node, offset - 1);
+                } else if (node.parentNode) {
+                    range.setStartBefore(node);
+                }
+            }
+            range.deleteContents();
+            editor.dispatchEvent(new Event('input'));
+        }
+    }
+
+    function setText(text) {
+        editor.innerText = text;
+        if (window.Android) {
+            Android.onTextLoaded(); // уведомляем Java, что текст установлен
+        }
+        renderFromEditor();
+    }
+
+    function setCursorToPosition(position) {
+        var selection = window.getSelection();
+        var range = document.createRange();
+        var textNode = editor.firstChild;
+        if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            if (position <= textNode.length) {
+                range.setStart(textNode, position);
+                range.setEnd(textNode, position);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    }
+
+    function getText() {
+    var editor = document.getElementById('editor');
+    var text = editor.innerText || editor.textContent;
+    // Обратная замена (если нужно)
+    return text;
+}
+
+    window.onload = function() {
+        renderFromEditor();
+    };
+</script>
+</body>
+</html>

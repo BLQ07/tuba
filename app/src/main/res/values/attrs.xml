@@ -1,0 +1,5 @@
+<resources>
+    <declare-styleable name="DynamicTableView">
+        <attr name="prefsName" format="string" />
+    </declare-styleable>
+</resources>

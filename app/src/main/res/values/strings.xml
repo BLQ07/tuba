@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Truba</string>
+    <string name="navigation_drawer_open">Open</string>
+    <string name="navigation_drawer_close">Close</string>
+
+    <string name="nav_settings">Настройки</string>
+    <string name="nav_sheets">Листы</string>
+    <string name="nav_constants">Константы</string>
+    <string name="nav_export_csv">Экспорт CSV</string>
+
+    <string name="btn_compute">Вычислить всё</string>
+    <string name="btn_constants">Константы</string>
+    <string name="btn_insert">Вставить</string>
+    <string name="btn_play">Play</string>
+    <string name="btn_stop">Stop</string>
+</resources>
