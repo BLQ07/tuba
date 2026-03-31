@@ -5,5 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="?attr/actionBarSize"
     android:background="?attr/colorPrimary"
-    app:title="@string/app_name"
-    app:titleTextColor="@android:color/white" />
+    app:titleTextColor="@android:color/white"
+    app:title="MathCad">
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_esp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="16dp"
+        android:text="ESP"
+        android:textColor="@android:color/white"/>
+</androidx.appcompat.widget.Toolbar>

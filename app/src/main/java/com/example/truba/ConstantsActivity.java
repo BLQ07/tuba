@@ -103,9 +103,9 @@ public class ConstantsActivity extends AppCompatActivity {
     }
 
     private static class ConstantsAdapter extends BaseAdapter {
-        private List<ConstantsManager.ConstantInfo> constants;
-        private ConstantsManager manager;
-        private Runnable onDataChanged;
+        private final List<ConstantsManager.ConstantInfo> constants;
+        private final ConstantsManager manager;
+        private final Runnable onDataChanged;
 
         ConstantsAdapter(List<ConstantsManager.ConstantInfo> constants, ConstantsManager manager, Runnable onDataChanged) {
             this.constants = constants;

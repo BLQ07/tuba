@@ -27,11 +27,11 @@ public class ESPConnector {
     private static String ESP_PASSWORD = "12345678";
     private static final String ESP_IP = "192.168.4.1";
 
-    private Context context;
-    private RequestQueue requestQueue;
-    private Gson gson;
+    private final Context context;
+    private final RequestQueue requestQueue;
+    private final Gson gson;
     private PollingRunnable pollingRunnable;
-    private android.os.Handler handler;
+    private final android.os.Handler handler;
     private int interval = 1000;
     private boolean isPolling = false;
     private DataCallback savedCallback;

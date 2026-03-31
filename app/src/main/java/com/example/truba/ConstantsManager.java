@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class ConstantsManager {
     private static final String PREFS_NAME = "math_constants";
-    private SharedPreferences prefs;
+    private final SharedPreferences prefs;
 
     public ConstantsManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);

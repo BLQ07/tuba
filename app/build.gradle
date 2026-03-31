@@ -31,20 +31,28 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
 }
-
 dependencies {
+    // AndroidX
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.10.0'
-    implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+
+    // Lifecycle
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.6.2'
+
+    // Networking
     implementation 'com.android.volley:volley:1.2.1'
-    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'com.google.code.gson:gson:2.10.1'
 
-
-implementation 'net.objecthunter:exp4j:0.4.8'
+    // Math
+    implementation 'net.objecthunter:exp4j:0.4.8'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
+    // Other
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation libs.activity
-
-
 }

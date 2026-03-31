@@ -1,4 +1,4 @@
-package com.example.truba;
+package com.example.truba.table;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.truba.R;
 import com.example.truba.table.DynamicTableView;
 import com.example.truba.table.TableManager;
 

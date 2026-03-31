@@ -2,12 +2,20 @@ package com.example.truba;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.*;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.multidex.BuildConfig;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -20,39 +28,64 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
-public class GraphActivity extends AppCompatActivity {
+public class GraphFragment extends Fragment {
 
     private LineChart chart;
-    private Spinner spinnerX, spinnerY;
-    private Button btnPlot, btnExportCSV;
+    private Spinner spinnerX;
+    private Spinner spinnerY;
+    private Button btnPlot;
+    private Button btnExportCSV;
+    private MainViewModel viewModel;
     private DataCollector dataCollector;
     private List<String> variableNames;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_graph);
+    public void onAttach(@NonNull android.content.Context context) {
+        super.onAttach(context);
+        dataCollector = ((MainActivity) requireActivity()).getDataCollector();
+    }
 
-        chart = findViewById(R.id.chart);
-        spinnerX = findViewById(R.id.spinner_x);
-        spinnerY = findViewById(R.id.spinner_y);
-        btnPlot = findViewById(R.id.btn_plot);
-        btnExportCSV = findViewById(R.id.btn_export_csv);
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_graph, container, false);
 
-        dataCollector = MathCadApplication.getDataCollector();
+        chart = view.findViewById(R.id.chart);
+        spinnerX = view.findViewById(R.id.spinner_x);
+        spinnerY = view.findViewById(R.id.spinner_y);
+        btnPlot = view.findViewById(R.id.btn_plot);
+        btnExportCSV = view.findViewById(R.id.btn_export_csv);
 
+        viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+
+        setupSpinners();
+        setupButtons();
+
+        return view;
+    }
+
+    private void setupSpinners() {
         variableNames = dataCollector.getAvailableVariables();
-        variableNames.add(0, "время");
+        List<String> displayNames = new ArrayList<>();
+        displayNames.add("время");
+        for (String name : variableNames) {
+            displayNames.add(name);
+        }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, variableNames);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, displayNames);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerX.setAdapter(adapter);
         spinnerY.setAdapter(adapter);
         spinnerX.setSelection(0);
-        if (variableNames.size() > 1) spinnerY.setSelection(1);
+        if (variableNames.size() > 0) spinnerY.setSelection(1);
+    }
 
+    private void setupButtons() {
         btnPlot.setOnClickListener(v -> {
             String varX = spinnerX.getSelectedItem().toString();
             String varY = spinnerY.getSelectedItem().toString();
@@ -72,43 +105,37 @@ public class GraphActivity extends AppCompatActivity {
         if ("время".equals(varX)) {
             entries = dataCollector.getTimeSeries(varY);
             if (entries.isEmpty()) {
-                Toast.makeText(this, "Нет данных для переменной " + varY, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Нет данных для переменной " + varY, Toast.LENGTH_SHORT).show();
                 return;
             }
         } else {
             entries = dataCollector.getScatterData(varX, varY);
             if (entries.isEmpty()) {
-                Toast.makeText(this, "Нет общих точек для " + varX + " и " + varY, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Нет общих точек для " + varX + " и " + varY, Toast.LENGTH_SHORT).show();
                 return;
             }
         }
-
-        // Логируем первые 5 точек для отладки
-        for (int i = 0; i < Math.min(entries.size(), 5); i++) {
-            Entry e = entries.get(i);
-            Log.d("Graph", "Point: x=" + e.getX() + ", y=" + e.getY());
-        }
-        Log.d("Graph", "Количество точек: " + entries.size());
 
         LineDataSet dataSet = new LineDataSet(entries, varY + " от " + varX);
         dataSet.setDrawValues(false);
         dataSet.setColor(getResources().getColor(R.color.purple_500));
         dataSet.setLineWidth(2f);
         dataSet.setCircleRadius(3f);
+        dataSet.setCircleColor(getResources().getColor(R.color.purple_700));
 
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
 
-        // Настройка оси X
         XAxis xAxis = chart.getXAxis();
         if ("время".equals(varX)) {
             xAxis.setValueFormatter(new ValueFormatter() {
+                private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
                 @Override
                 public String getFormattedValue(float value) {
-                    return String.format(Locale.US, "%.1f с", value);
+                    return sdf.format(new Date((long) value));
                 }
             });
-            xAxis.setLabelRotationAngle(0);
+            xAxis.setLabelRotationAngle(45);
         } else {
             xAxis.setValueFormatter(new ValueFormatter() {
                 @Override
@@ -135,13 +162,13 @@ public class GraphActivity extends AppCompatActivity {
         }
 
         if (entries.isEmpty()) {
-            Toast.makeText(this, "Нет данных для экспорта", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Нет данных для экспорта", Toast.LENGTH_SHORT).show();
             return;
         }
 
         try {
             String fileName = "graph_" + varY + "_vs_" + varX + "_" + System.currentTimeMillis() + ".csv";
-            File csvFile = new File(getExternalFilesDir(null), fileName);
+            File csvFile = new File(requireContext().getExternalFilesDir(null), fileName);
             FileWriter writer = new FileWriter(csvFile);
 
             writer.append(varX).append(",").append(varY).append("\n");
@@ -153,19 +180,19 @@ public class GraphActivity extends AppCompatActivity {
             }
             writer.close();
 
-            Toast.makeText(this, "CSV сохранён: " + csvFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "CSV сохранён: " + csvFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
             shareCSVFile(csvFile);
 
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Ошибка экспорта: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Ошибка экспорта: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void shareCSVFile(File csvFile) {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/csv");
-        shareIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this,
+        shareIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(requireContext(),
                 BuildConfig.APPLICATION_ID + ".fileprovider", csvFile));
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         startActivity(Intent.createChooser(shareIntent, "Поделиться CSV"));

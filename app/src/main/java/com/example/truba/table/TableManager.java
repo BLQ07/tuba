@@ -10,8 +10,8 @@ import java.util.Map;
 
 public class TableManager {
     private static final String PREFS_NAME = "tables";
-    private SharedPreferences prefs;
-    private Map<String, TableInfo> tables = new HashMap<>();
+    private final SharedPreferences prefs;
+    private final Map<String, TableInfo> tables = new HashMap<>();
 
     public TableManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);

@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class SheetManager {
     private static final String PREFS_NAME = "sheets";
-    private SharedPreferences prefs;
+    private final SharedPreferences prefs;
 
     public SheetManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);

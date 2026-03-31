@@ -11,8 +11,8 @@ import java.util.Map;
 
 public class MatrixManager {
     private static final String PREFS_NAME = "matrices";
-    private SharedPreferences prefs;
-    private Gson gson;
+    private final SharedPreferences prefs;
+    private final Gson gson;
 
     public MatrixManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);

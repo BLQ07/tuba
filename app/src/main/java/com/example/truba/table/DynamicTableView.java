@@ -43,8 +43,8 @@ public class DynamicTableView extends LinearLayout {
     private SharedPreferences prefs;
     private String prefsName;
 
-    private int colorA = Color.WHITE;
-    private int colorB = Color.parseColor("#F0F0F0");
+    private final int colorA = Color.WHITE;
+    private final int colorB = Color.parseColor("#F0F0F0");
     private int columnWidthPx;
 
     private OnDataChangedListener dataChangedListener;

@@ -23,6 +23,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Truba"
         android:usesCleartextTraffic="true">
+        <activity
+            android:name=".TableEditorActivity"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -32,12 +36,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <activity
-            android:name=".GraphActivity"
-            android:exported="false" />
-        <activity
-            android:name=".TablesActivity"
-            android:exported="false" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity
             android:name=".SheetEditorActivity"
             android:exported="false" />
@@ -51,19 +59,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".ConstantsActivity" />
-        <activity android:name=".SheetsActivity" />
-        <activity android:name=".SettingsActivity" />
-        <activity android:name=".TableEditActivity" />
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
     </application>
 
 </manifest>

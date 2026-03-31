@@ -1,64 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="#F5F5F5">
 
-    <EditText
-        android:id="@+id/et_sheet_name"
+    <!-- Верхняя панель -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Имя листа"
-        android:textSize="18sp"
-        android:padding="8dp"/>
+        app:cardCornerRadius="0dp"
+        app:cardElevation="2dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Редактор формул"
-        android:textSize="14sp"
-        android:layout_marginTop="8dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <WebView
-        android:id="@+id/webView"
+            <EditText
+                android:id="@+id/et_sheet_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Имя листа"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:background="@android:drawable/editbox_background"
+                android:padding="12dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Редактор формул (LaTeX)"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginTop="8dp"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- WebView для LaTeX -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        android:background="#f0f0f0"
-        android:layout_marginTop="4dp"/>
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
 
-    <android.inputmethodservice.KeyboardView
-        android:id="@+id/keyboardView"
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFFFFF"/>
+    </androidx.cardview.widget.CardView>
+
+    <!-- KeyboardView с улучшенным стилем -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="#FFFFFF"
+        android:layout_marginTop="12dp"
         android:layout_marginBottom="8dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp">
 
-        android:keyTextColor="#000000"
+        <android.inputmethodservice.KeyboardView
+            android:id="@+id/keyboardView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:keyBackground="@drawable/keyboard_key_selector"
+            android:keyTextColor="#FFFFFF"
+            android:keyTextSize="16sp"
+            android:labelTextSize="16sp"
 
-        android:visibility="visible" />
+            android:shadowColor="#000000"
+            android:shadowRadius="2"
+            android:padding="4dp"/>
 
+    </androidx.cardview.widget.CardView>
+
+    <!-- Кнопки действий -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+        android:padding="16dp"
+        android:gravity="center">
 
         <Button
             android:id="@+id/btn_save"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:text="Сохранить"
-            android:layout_marginEnd="8dp"/>
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="#4CAF50"/>
 
         <Button
             android:id="@+id/btn_cancel"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Отмена"/>
+            android:text="Отмена"
+            android:backgroundTint="#F44336"/>
     </LinearLayout>
-
 </LinearLayout>

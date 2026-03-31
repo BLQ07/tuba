@@ -1,4 +1,4 @@
-package com.example.truba;
+package com.example.truba.table;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.truba.R;
 import com.example.truba.table.TableManager;
 
 import java.util.ArrayList;
