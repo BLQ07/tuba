@@ -3,418 +3,419 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MathCad для Android – полное руководство пользователя</title>
+    <title>MathCad для Android – Руководство пользователя</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #fff;
-            max-width: 1200px;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f7fb;
+            color: #1e293b;
+            line-height: 1.5;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1300px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            overflow: hidden;
         }
-        h1, h2, h3 {
-            color: #2c3e50;
+        header {
+            background: linear-gradient(135deg, #1e2a5e, #2d3a7c);
+            color: white;
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 4px solid #ffb347;
         }
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
         }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            margin-top: -10px;
-            margin-bottom: 30px;
+        header p {
+            font-size: 1rem;
+            opacity: 0.85;
+            max-width: 800px;
         }
-        .toc {
-            background-color: #eef;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 30px;
+        .badge {
+            display: inline-block;
+            background: #ffb347;
+            color: #1e293b;
+            border-radius: 40px;
+            padding: 0.2rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 1rem;
         }
-        .toc a {
+        nav {
+            background: #f8fafc;
+            padding: 0.75rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        nav a {
+            color: #334155;
             text-decoration: none;
-            color: #2980b9;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.2s;
         }
-        .toc a:hover {
-            text-decoration: underline;
+        nav a:hover {
+            color: #2d3a7c;
         }
-        .toc ul {
-            columns: 2;
-            column-gap: 30px;
-            list-style: none;
-            padding-left: 0;
+        .content {
+            padding: 2rem;
         }
-        .toc li {
-            margin-bottom: 5px;
+        h2 {
+            font-size: 1.6rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #e2e8f0;
+            color: #0f172a;
         }
-        pre {
-            background-color: #2d2d2d !important;
-            color: #f8f8f2 !important;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-x: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            margin: 15px 0;
+        h3 {
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.75rem;
+            color: #1e2a5e;
+        }
+        p, li {
+            color: #2d3a5e;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border: 1px solid #eef2f6;
+        }
+        .card-note {
+            background: #fffbeb;
+            border-left: 5px solid #f59e0b;
+        }
+        .card-warning {
+            background: #fef2f2;
+            border-left: 5px solid #ef4444;
         }
         code {
-            background-color: #eee !important;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #333 !important;
+            background: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #b91c1c;
         }
-        .note {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 10px 15px;
-            margin: 15px 0;
-            border-radius: 4px;
-        }
-        .warning {
-            background-color: #f8d7da;
-            border-left: 4px solid #dc3545;
-            padding: 10px 15px;
-            margin: 15px 0;
-            border-radius: 4px;
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 16px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            margin: 1rem 0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 1.2rem 0;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
             text-align: left;
+            vertical-align: top;
         }
         th {
-            background-color: #f2f2f2;
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .grid-2 {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
+        .grid-2 > div {
+            flex: 1;
+            min-width: 240px;
         }
         footer {
-            margin-top: 40px;
+            background: #f1f5f9;
+            padding: 1.5rem;
             text-align: center;
-            font-size: 0.9em;
-            color: #7f8c8d;
-            border-top: 1px solid #ddd;
-            padding-top: 20px;
+            font-size: 0.85rem;
+            color: #475569;
+            border-top: 1px solid #e2e8f0;
         }
-        @media (max-width: 768px) {
-            .toc ul {
-                columns: 1;
-            }
-            body {
-                padding: 10px;
-            }
+        @media (max-width: 680px) {
+            body { padding: 1rem; }
+            .content { padding: 1.5rem; }
+            h2 { font-size: 1.3rem; }
         }
     </style>
 </head>
 <body>
-<h1>📱 MathCad для Android</h1>
-<div class="subtitle">Полное руководство пользователя</div>
+<div class="container">
+    <header>
+        <h1>📱 MathCad для Android</h1>
+        <p>Полноценный математический редактор, работа с ESP32, матрицы, графики, листы и таблицы. Всё работает офлайн.</p>
+        <div class="badge">Версия 3.0 • Обновлено 2026</div>
+    </header>
+    <nav>
+        <a href="#start">🚀 Начало</a>
+        <a href="#sheets">📄 Листы</a>
+        <a href="#constants">🔢 Константы</a>
+        <a href="#tables">📊 Таблицы</a>
+        <a href="#matrices">🧮 Матрицы</a>
+        <a href="#esp">📡 Подключение ESP</a>
+        <a href="#graphics">📈 Графики</a>
+        <a href="#faq">❓ FAQ</a>
+    </nav>
+    <div class="content">
 
-<div class="toc">
-    <h2>Содержание</h2>
-    <ul>
-        <li><a href="#intro">1. Введение</a></li>
-        <li><a href="#install">2. Установка и настройка</a></li>
-        <li><a href="#main">3. Главный экран</a></li>
-        <li><a href="#constants">4. Константы</a></li>
-        <li><a href="#tables">5. Таблицы данных</a></li>
-        <li><a href="#sheets">6. Листы (скрипты)</a></li>
-        <li><a href="#matrices">7. Матрицы и векторы</a></li>
-        <li><a href="#esp">8. Подключение к ESP32</a></li>
-        <li><a href="#graphs">9. Графики</a></li>
-        <li><a href="#settings">10. Настройки</a></li>
-        <li><a href="#faq">11. Часто задаваемые вопросы</a></li>
-    </ul>
-</div>
+        <section id="start">
+            <h2>🚀 1. Первый запуск и интерфейс</h2>
+            <p>Приложение разделено на 5 удобных вкладок: <strong>Управление</strong>, <strong>Результаты</strong>, <strong>Листы</strong>, <strong>График</strong>, <strong>Настройки</strong>. Все данные (константы, листы, таблицы) сохраняются локально.</p>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>🕹️ Управление (вкладка 1)</h3>
+                    <ul>
+                        <li>Автоподключение к ESP (руководство по Wi-Fi)</li>
+                        <li>Кнопка Play/Stop для опроса датчиков</li>
+                        <li>Выбор переменной и слайдер управления</li>
+                        <li>Список всех переменных ESP с возможностью отправки</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>📋 Результаты (вкладка 2)</h3>
+                    <ul>
+                        <li>Вывод вычислений листа</li>
+                        <li>Встроенный лог (переключение через спиннер)</li>
+                        <li>Копирование результатов долгим нажатием</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>📑 Листы (вкладка 3)</h3>
+                    <ul>
+                        <li>Создание / редактирование / переименование / удаление листов</li>
+                        <li>Поддержка циклов <code>for</code>, <code>while</code>, условий <code>if</code></li>
+                        <li>Функция <code>print()</code> для отправки данных на ESP</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>📈 График (вкладка 4)</h3>
+                    <ul>
+                        <li>Выбор осей X и Y из любых переменных</li>
+                        <li>Экспорт CSV, масштабирование жестами</li>
+                        <li>Синхронизация по времени или зависимость «переменная от переменной»</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>⚙️ Настройки (вкладка 5)</h3>
+                    <ul>
+                        <li>SSID / пароль ESP</li>
+                        <li>Интервал опроса (мс)</li>
+                        <li>Светлая/тёмная тема, цвет акцента</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card card-note">
+                <strong>💡 Совет:</strong> Для быстрого доступа к константам и таблицам используйте боковое меню (три полоски в тулбаре). Там же — экспорт всех данных в CSV.
+            </div>
+        </section>
 
-<h2 id="intro">1. Введение</h2>
-<p>Приложение «MathCad» для Android — мощный инструмент для математических расчётов, обработки данных и взаимодействия с микроконтроллерами ESP32. Оно сочетает в себе:</p>
-<ul>
-    <li>Редактор выражений с кастомной клавиатурой (математические функции, матрицы, операторы).</li>
-    <li>Систему <strong>листов</strong> – многострочные скрипты с присваиваниями, условиями (<code>if/else/endif</code>), циклами (<code>for</code>, <code>while</code>) и функцией <code>print()</code> для отправки данных на ESP.</li>
-    <li>Управление <strong>постоянными</strong> и <strong>временными</strong> константами.</li>
-    <li><strong>Таблицы данных</strong> – удобное хранение параметров; загрузка строк таблицы как временных констант.</li>
-    <li>Полную <strong>матричную алгебру</strong> (определитель, обратная матрица, решение систем, векторные операции и т.д.).</li>
-    <li>Автоматическое подключение к ESP32, периодический опрос данных, управление переменными через слайдер.</li>
-    <li>Построение графиков (временные ряды или зависимость одной переменной от другой) с экспортом в CSV.</li>
-    <li>Настройку темы (светлая/тёмная) и цвета акцента.</li>
-</ul>
+        <section id="sheets">
+            <h2>📄 2. Листы (скрипты)</h2>
+            <p>Листы — последовательность команд, присваиваний и управляющих конструкций. Редактор листа использует WebView + LaTeX-рендеринг и кастомную клавиатуру.</p>
+            <h3>📌 Синтаксис</h3>
+            <pre><code># Присваивание
+a := 10
+b := a * 2
 
-<h2 id="install">2. Установка и настройка</h2>
-<h3>2.1 Разрешения</h3>
-<p>Приложение запрашивает следующие разрешения (все они указаны в <code>AndroidManifest.xml</code>):</p>
-<ul>
-    <li><code>INTERNET</code> – для связи с ESP.</li>
-    <li><code>ACCESS_NETWORK_STATE</code>, <code>ACCESS_WIFI_STATE</code>, <code>CHANGE_WIFI_STATE</code> – для автоматического подключения к сети ESP.</li>
-    <li><code>WRITE_EXTERNAL_STORAGE</code> – для сохранения CSV-файлов (только до Android 10).</li>
-    <li><code>ACCESS_FINE_LOCATION</code>, <code>ACCESS_COARSE_LOCATION</code> – для сканирования Wi-Fi (требуется на Android 6+).</li>
-</ul>
+# Выражение (результат сохраняется в переменную result)
+sin(a) + cos(b)
 
-<h3>2.2 Подготовка ESP32</h3>
-<p>ESP32 должен быть настроен как точка доступа с фиксированным IP <code>192.168.4.1</code>. На нём должен работать HTTP-сервер, отвечающий на запросы:</p>
-<ul>
-    <li><code>GET /data</code> – возвращает JSON со всеми переменными (например, <code>{"x":10.5, "y":20.0}</code>).</li>
-    <li><code>GET /set?var=имя&value=значение</code> – устанавливает переменную и возвращает обновлённый JSON.</li>
-</ul>
-<p>Рекомендуется использовать библиотеку <code>ESPDataServer</code> (входит в проект). SSID и пароль точки доступа по умолчанию: <code>MathCad_ESP</code> / <code>12345678</code>. Их можно изменить в настройках приложения.</p>
+# Отправка на ESP
+print(a)
+print(temperature, a + 273.15)
 
-<h3>2.3 Подключение к ESP</h3>
-<ol>
-    <li>Включите ESP (питание).</li>
-    <li>На главном экране приложения переключите переключатель <strong>ESP</strong> (в правой части тулбара).</li>
-    <li>Приложение автоматически попытается подключиться к сети <code>MathCad_ESP</code>. Если сеть не найдена, появится инструкция по ручному подключению.</li>
-    <li>После успешного подключения нажмите кнопку <strong>Play</strong> (вместо Stop) для запуска периодического опроса данных.</li>
-</ol>
-
-<h2 id="main">3. Главный экран</h2>
-<p>На главном экране расположены основные элементы управления:</p>
-<ul>
-    <li><strong>Поле ввода выражений</strong> – многострочное поле для ввода выражений (если не выбран лист).</li>
-    <li><strong>Кастомная клавиатура</strong> – содержит кнопки математических функций, операторов, матричных функций, служебных кнопок (Const, ←, пробел, перевод строки).</li>
-    <li><strong>Кнопка «Вычислить всё»</strong> – вычисляет текущий лист (если выбран) или выражение из поля ввода.</li>
-    <li><strong>Спиннер листов</strong> – выбор активного листа для вычислений.</li>
-    <li><strong>Спиннер переменных</strong> – список всех доступных переменных (постоянные константы, данные ESP, временные константы). При выборе переменной появляется слайдер.</li>
-    <li><strong>Слайдер (SeekBar)</strong> – изменяет значение выбранной переменной. При отпускании ползунка новое значение отправляется на ESP и сохраняется в соответствующую константу.</li>
-    <li><strong>Область результатов</strong> – отображает результаты вычислений листа, сообщения об ошибках, подтверждения отправки <code>print()</code>.</li>
-    <li><strong>Блоки постоянных и временных констант</strong> – горизонтальные списки текущих значений.</li>
-    <li><strong>Таблицы данных</strong> – спиннер таблиц, спиннер строк, кнопка «Добавить как константу».</li>
-    <li><strong>Кнопка «График»</strong> – открывает экран построения графиков.</li>
-    <li><strong>Кнопка «Play/Stop»</strong> – запуск/остановка опроса ESP.</li>
-    <li><strong>Кнопка «Очистить временные константы»</strong> – удаляет все временные константы.</li>
-</ul>
-
-<h2 id="constants">4. Константы</h2>
-<h3>4.1 Постоянные константы</h3>
-<p>Сохраняются в памяти телефона (SharedPreferences) и не теряются при перезапуске. Каждая постоянная константа имеет имя, значение, минимальное и максимальное значение (для слайдера).</p>
-<p><strong>Добавление:</strong> нажмите кнопку <strong>Const</strong> на клавиатуре, введите имя и значение, затем задайте диапазон.</p>
-<p><strong>Редактирование:</strong> боковое меню → «Константы». Здесь можно изменять значения (автосохранение при потере фокуса), удалять константы.</p>
-
-<h3>4.2 Временные константы</h3>
-<p>Действуют только в текущей сессии. Создаются:</p>
-<ul>
-    <li>При выполнении присваивания в листе (<code>a := 5</code>).</li>
-    <li>При загрузке строки из таблицы (кнопка «Добавить как константу»).</li>
-</ul>
-<p>Временные константы переопределяют постоянные с тем же именем (но не данные ESP). Их можно очистить кнопкой <strong>Очистить временные константы</strong>.</p>
-
-<h2 id="tables">5. Таблицы данных</h2>
-<p>Таблицы позволяют хранить наборы параметров и быстро загружать их во временные константы.</p>
-<h3>5.1 Создание и редактирование</h3>
-<ul>
-    <li>Боковое меню → «Таблицы».</li>
-    <li>Нажмите «Создать таблицу», введите имя и заголовки столбцов через запятую (обязательно должны быть столбцы <code>name</code> и <code>value</code>, остальные – произвольные).</li>
-    <li>В списке таблиц выберите созданную, откроется редактор.</li>
-    <li>Добавляйте строки кнопкой «+ Добавить строку». Первый столбец – ID автоматический, остальные – редактируемые ячейки.</li>
-    <li>Удалить строку можно только удалив всю таблицу (кнопка удаления в списке таблиц).</li>
-</ul>
-<h3>5.2 Использование на главном экране</h3>
-<ol>
-    <li>Выберите таблицу в спиннере «Таблицы данных».</li>
-    <li>Выберите строку по имени (столбец <code>name</code>).</li>
-    <li>Нажмите <strong>Добавить как константу</strong>. Все числовые значения из выбранной строки станут временными константами с именами столбцов.</li>
-</ol>
-
-<h2 id="sheets">6. Листы (скрипты)</h2>
-<p>Листы – многострочные текстовые файлы, содержащие последовательность инструкций. Редактор листа использует WebView с LaTeX-рендерингом и ту же кастомную клавиатуру.</p>
-<h3>6.1 Создание и редактирование</h3>
-<ul>
-    <li>Боковое меню → «Листы».</li>
-    <li>Нажмите «Создать лист», введите имя и содержимое.</li>
-    <li>Для редактирования выберите лист из списка.</li>
-    <li>Сохраните изменения.</li>
-</ul>
-<h3>6.2 Синтаксис</h3>
-<h4>Присваивание</h4>
-<pre><code>a := 10
-b := a * 2</code></pre>
-<p>Переменная <code>a</code> становится временной константой.</p>
-
-<h4>Функция <code>print()</code></h4>
-<ul>
-    <li><code>print(x)</code> – отправляет текущее значение переменной <code>x</code> на ESP.</li>
-    <li><code>print(x, y*2)</code> – вычисляет <code>y*2</code> и отправляет результат на ESP под именем <code>x</code>.</li>
-</ul>
-
-<h4>Выражения</h4>
-<p>Просто строка (например, <code>sin(x)+cos(y)</code>) вычисляется; результат сохраняется в специальной переменной <code>result</code>.</p>
-
-<h4>Условный оператор <code>if</code></h4>
-<pre><code>if x < 10:
+# Условный оператор
+if x > 5:
     print(x)
 else:
-    print(x, x*2)
-endif</code></pre>
-<p>Условие может содержать операторы сравнения: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>==</code>, <code>!=</code> (они автоматически заменяются на функции <code>lt</code>, <code>gt</code>, <code>le</code>, <code>ge</code>, <code>eq</code>, <code>neq</code>).</p>
+    print(0)
+endif
 
-<h4>Цикл <code>for</code></h4>
-<pre><code>for i from 0 to 10:
-    a := a + i
-    print(a)
-end</code></pre>
-<p>Переменная цикла доступна только внутри тела; изменяется от начального до конечного значения включительно с шагом 1.</p>
+# Цикл for
+for i from 0 to 10:
+    sum := sum + i
+end
 
-<h4>Цикл <code>while</code></h4>
-<pre><code>i := 0
+# Цикл while
+i := 0
 while i < 10:
     i := i + 1
     print(i)
 end</code></pre>
+            <div class="card">
+                <h3>🖨️ print() — отправка на ESP</h3>
+                <ul>
+                    <li><code>print(имя)</code> – отправляет текущее значение переменной (ищет в постоянных, временных, данных ESP).</li>
+                    <li><code>print(имя, выражение)</code> – вычисляет выражение и отправляет результат под указанным именем.</li>
+                </ul>
+                <p><strong>Пример:</strong> <code>print(duty, pwm * 100 / 255)</code></p>
+            </div>
+            <div class="card card-note">
+                <strong>📂 Управление листами:</strong> на вкладке «Листы» есть кнопки: Создать, Редактировать, Переименовать, Удалить. При сохранении лист автоматически пересчитывается.
+            </div>
+        </section>
 
-<h4>Матричные функции в листах</h4>
-<pre><code>A := matrix(2,2,1,2,3,4)
-d := det(A)
-print(d)
-B := inv(A)
-x := B[0][1]</code></pre>
+        <section id="constants">
+            <h2>🔢 3. Константы</h2>
+            <p>Постоянные константы хранятся в <code>SharedPreferences</code> и не исчезают после перезапуска. Временные константы создаются в листах через <code>:=</code> или загрузкой из таблиц.</p>
+            <div class="grid-2">
+                <div>
+                    <h3>📌 Постоянные</h3>
+                    <ul>
+                        <li>Добавление: кнопка <strong>Const</strong> на клавиатуре → имя + значение + min/max.</li>
+                        <li>Редактирование: боковое меню → Константы.</li>
+                        <li>Используются во всех выражениях, видны на вкладке «Листы».</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>⏱️ Временные</h3>
+                    <ul>
+                        <li>Живут только во время сеанса.</li>
+                        <li>Переопределяют постоянные с тем же именем.</li>
+                        <li>Очищаются кнопкой «Очистить временные константы» на вкладке «Управление».</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card card-warning">
+                ⚠️ <strong>Важно:</strong> избегайте имён <code>pi</code>, <code>e</code>, <code>sin</code>, <code>cos</code> – они зарезервированы. Имена переменных: латиница, цифры, подчёркивание, не начинаются с цифры.
+            </div>
+        </section>
 
-<h3>6.3 Примеры листов</h3>
-<p><strong>Пример 1: Простые вычисления и отправка</strong></p>
-<pre><code>a := 10
-b := 20
-c := a + b
-print(c)</code></pre>
+        <section id="tables">
+            <h2>📊 4. Таблицы данных</h2>
+            <p>Таблицы — удобный способ хранить параметры (например, калибровочные данные). Каждая строка может быть загружена как набор временных констант.</p>
+            <ul>
+                <li>Создание таблицы: боковое меню → Таблицы → «Создать таблицу».</li>
+                <li>Обязательные колонки: <code>name</code> (название строки) и <code>value</code> (числовое значение), остальные колонки произвольные.</li>
+                <li>Редактор таблицы позволяет добавлять строки, редактировать ячейки (автосохранение).</li>
+                <li><strong>Использование на главном экране:</strong> выберите таблицу → выберите строку по имени → нажмите «Добавить как константу» → все числовые поля строки станут временными константами (имена = заголовки колонок).</li>
+            </ul>
+            <p>Это позволяет быстро подставить набор параметров, например: <code>kp</code>, <code>ki</code>, <code>kd</code> из одной строки таблицы.</p>
+        </section>
 
-<p><strong>Пример 2: Цикл и условный оператор</strong></p>
-<pre><code>x := 0
-while x < 10:
-    x := x + 1
-    if x > 5:
-        print(x, x*2)
-    else:
-        print(x)
-    endif
-end</code></pre>
+        <section id="matrices">
+            <h2>🧮 5. Матрицы и векторы</h2>
+            <p>Приложение поддерживает полноценную матричную алгебру. Матрицы можно создавать через функции прямо в листах или через менеджер матриц (боковое меню).</p>
+            <div class="grid-2">
+                <div>
+                    <h3>📌 Создание</h3>
+                    <pre><code>A := matrix(2,2,1,2,3,4)
+I := eye(3)
+Z := zeros(2,2)
+v := matrix(1,3,1,2,3)</code></pre>
+                </div>
+                <div>
+                    <h3>🔧 Операции</h3>
+                    <ul>
+                        <li><code>det(A)</code> – определитель</li>
+                        <li><code>inv(A)</code> – обратная матрица</li>
+                        <li><code>transpose(A)</code> – транспонирование</li>
+                        <li><code>add(A,B)</code>, <code>multiply(A,B)</code></li>
+                        <li><code>solve(A,b)</code> – решение СЛАУ</li>
+                        <li><code>norm(v)</code>, <code>dot(u,v)</code>, <code>cross(u,v)</code></li>
+                    </ul>
+                </div>
+            </div>
+            <p>Доступ к элементу: <code>A[0][1]</code> (нумерация с 0). Матрицы, созданные в листах, временные; постоянные матрицы хранятся в менеджере матриц.</p>
+        </section>
 
-<p><strong>Пример 3: Работа с матрицами</strong></p>
-<pre><code>A := matrix(2,2,1,2,3,4)
-detA := det(A)
-print(detA)
-B := inv(A)
-C := multiply(A, B)
-print(C[0][0])</code></pre>
+        <section id="esp">
+            <h2>📡 6. Подключение к ESP32</h2>
+            <p>ESP работает как точка доступа (AP) с фиксированным IP <code>192.168.4.1</code>. Приложение может управлять переменными и получать данные через HTTP GET.</p>
+            <div class="card">
+                <h3>🔌 Настройка ESP (прошивка)</h3>
+                <ul>
+                    <li>ESP должен отвечать на <code>GET /data</code> → JSON всех переменных: <code>{"temperature":25.5,"pwm":128}</code></li>
+                    <li>ESP должен отвечать на <code>GET /set?var=имя&value=значение</code> → установка переменной и возврат обновлённого JSON.</li>
+                    <li>Рекомендуется использовать библиотеку <code>ESPDataServer</code> (предоставлена в проекте).</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>📲 Работа в приложении</h3>
+                <ul>
+                    <li>Переключатель <strong>ESP</strong> на тулбаре включает автоподключение.</li>
+                    <li>При включении отображается диалог с инструкцией подключения к сети <code>MathCad_ESP</code> (SSID и пароль настраиваются).</li>
+                    <li>После подключения нажмите <strong>Play</strong> — начнётся периодический опрос <code>/data</code>.</li>
+                    <li>Слайдер на вкладке «Управление» отправляет новое значение на ESP через <code>/set</code> и сохраняет в постоянную константу (если такая есть).</li>
+                    <li>Все переменные ESP отображаются внизу вкладки «Управление» — их можно отправить повторно кнопкой «Отправить».</li>
+                </ul>
+            </div>
+            <div class="card card-note">
+                💡 <strong>Совет:</strong> интервал опроса регулируется в настройках (мс). При высокой частоте ESP может не успевать — увеличьте интервал до 1000–2000 мс.
+            </div>
+        </section>
 
-<h2 id="matrices">7. Матрицы и векторы</h2>
-<h3>7.1 Создание матриц</h3>
-<ul>
-    <li><code>matrix(rows, cols, v1, v2, ...)</code> – создаёт матрицу <code>rows×cols</code> из перечисленных значений (по строкам).</li>
-    <li><code>eye(n)</code> – единичная матрица n×n.</li>
-    <li><code>zeros(rows, cols)</code> – нулевая матрица.</li>
-    <li><code>ones(rows, cols)</code> – матрица из единиц.</li>
-</ul>
+        <section id="graphics">
+            <h2>📈 7. Графики</h2>
+            <p>Все полученные данные (ESP, присваивания, вычисления) автоматически сохраняются в <code>DataCollector</code> и доступны для построения графиков.</p>
+            <ul>
+                <li>На вкладке «График» выберите ось X и ось Y. Если X = «время» — график изменения переменной во времени. Если X — другая переменная, строится scatter‑график (синхронизация по времени).</li>
+                <li>Кнопка «Экспорт CSV» сохраняет текущий график в файл (доступен для отправки).</li>
+                <li>График можно масштабировать жестами (сведение/разведение пальцев).</li>
+            </ul>
+            <div class="card card-note">
+                📊 <strong>Примечание:</strong> данные для графика накапливаются с момента запуска опроса или изменения слайдера. Очистить историю можно только перезапуском приложения (или через кнопку очистки в коде).
+            </div>
+        </section>
 
-<h3>7.2 Основные операции</h3>
-<table>
-    <thead>
-    <tr><th>Функция</th><th>Описание</th><th>Пример</th></tr>
-    </thead>
-    <tbody>
-    <tr><td><code>det(A)</code></td><td>Определитель квадратной матрицы</td><td><code>d := det(A)</code></td></tr>
-    <tr><td><code>trace(A)</code></td><td>След матрицы</td><td><code>t := trace(A)</code></td></tr>
-    <tr><td><code>inv(A)</code></td><td>Обратная матрица</td><td><code>Ainv := inv(A)</code></td></tr>
-    <tr><td><code>transpose(A)</code></td><td>Транспонирование</td><td><code>At := transpose(A)</code></td></tr>
-    <tr><td><code>rank(A)</code></td><td>Ранг матрицы</td><td><code>r := rank(A)</code></td></tr>
-    <tr><td><code>cond(A)</code></td><td>Число обусловленности</td><td><code>c := cond(A)</code></td></tr>
-    <tr><td><code>norm(v)</code></td><td>Евклидова норма вектора</td><td><code>n := norm(v)</code></td></tr>
-    <tr><td><code>dot(u, v)</code></td><td>Скалярное произведение векторов</td><td><code>s := dot(u, v)</code></td></tr>
-    <tr><td><code>cross(u, v)</code></td><td>Векторное произведение (только 3D)</td><td><code>c := cross(u, v)</code></td></tr>
-    <tr><td><code>add(A, B)</code></td><td>Сложение матриц</td><td><code>C := add(A, B)</code></td></tr>
-    <tr><td><code>subtract(A, B)</code></td><td>Вычитание матриц</td><td><code>C := subtract(A, B)</code></td></tr>
-    <tr><td><code>multiply(A, B)</code></td><td>Умножение матриц</td><td><code>C := multiply(A, B)</code></td></tr>
-    <tr><td><code>emul(A, B)</code></td><td>Поэлементное умножение</td><td><code>C := emul(A, B)</code></td></tr>
-    <tr><td><code>solve(A, b)</code></td><td>Решение системы A·x = b (b – вектор-столбец)</td><td><code>x := solve(A, b)</code></td></tr>
-    </tbody>
-</table>
+        <section id="faq">
+            <h2>❓ 8. Частые вопросы и решения</h2>
+            <div class="card">
+                <h3>❌ Ошибка «addNetwork returned -1»</h3>
+                <p>Это означает, что автоматическое подключение к Wi-Fi ESP не удалось. Приложение использует безопасный метод: при включении автоподключения показывается диалог с инструкцией. Подключитесь вручную через настройки телефона к сети <code>MathCad_ESP</code>, затем вернитесь в приложение и включите опрос.</p>
+            </div>
+            <div class="card">
+                <h3>📡 Нет данных от ESP</h3>
+                <p>Проверьте, что ESP создаёт сеть, SSID и пароль совпадают с настройками (меню → Настройки). Убедитесь, что IP телефона в сети ESP: обычно <code>192.168.4.x</code>. Также проверьте, что ESP отвечает на запрос <code>/data</code> (можно открыть в браузере телефона).</p>
+            </div>
+            <div class="card">
+                <h3>📉 График не отображает все точки</h3>
+                <p>Убедитесь, что используется единый <code>DataCollector</code> (доступен через <code>MyApplication.getDataCollector()</code>). После каждого изменения слайдера или получения данных от ESP точки должны добавляться. Проверьте логи с фильтром <code>DataCollector</code>.</p>
+            </div>
+            <div class="card">
+                <h3>🖨️ print() не отправляет значение</h3>
+                <p>Проверьте, что имя переменной существует (постоянная константа, временная или данные ESP). Для отладки используйте вкладку «Результаты» в режиме «Лог» — там будут видны ошибки и сообщения.</p>
+            </div>
+            <div class="card">
+                <h3>⚡ Матричные функции не работают</h3>
+                <p>Убедитесь, что вы используете правильный синтаксис: <code>det(A)</code>, <code>inv(A)</code>, <code>multiply(A,B)</code>. Для доступа к элементу: <code>A[0][1]</code>. Матрицы должны быть созданы заранее.</p>
+            </div>
+        </section>
 
-<h3>7.3 Доступ к элементам</h3>
-<p>Используйте <code>A[i][j]</code>, где <code>i</code> – номер строки, <code>j</code> – номер столбца (нумерация с 0).</p>
-<pre><code>A := matrix(2,2,1,2,3,4)
-x := A[0][1]   // x = 2</code></pre>
-
-<h3>7.4 Хранение матриц</h3>
-<p>Матрицы, созданные в листах, не сохраняются автоматически. Для постоянного хранения используйте <strong>Боковое меню → Матрицы</strong>. Там можно создать матрицу, указав размер и значения. Постоянные матрицы доступны в листах по имени.</p>
-
-<h2 id="esp">8. Подключение к ESP32</h2>
-<h3>8.1 Настройка ESP</h3>
-<p>ESP должен работать как точка доступа (AP) с фиксированным IP <code>192.168.4.1</code>. Прошивка должна отвечать на <code>/data</code> и <code>/set</code> (см. раздел 2.2).</p>
-
-<h3>8.2 Настройка приложения</h3>
-<ul>
-    <li><strong>SSID и пароль ESP</strong> можно изменить в <strong>Боковое меню → Настройки</strong>.</li>
-    <li><strong>Интервал опроса</strong> – как часто приложение будет запрашивать <code>/data</code> (мс).</li>
-</ul>
-
-<h3>8.3 Управление переменными</h3>
-<ul>
-    <li>При выборе переменной в спиннере и перемещении слайдера новое значение отправляется на ESP через <code>/set</code> и сохраняется в константу (постоянную или временную).</li>
-    <li>В листах для отправки используйте <code>print(имя)</code> или <code>print(имя, выражение)</code>.</li>
-</ul>
-
-<h2 id="graphs">9. Графики</h2>
-<h3>9.1 Построение</h3>
-<ol>
-    <li>Остановите опрос ESP (кнопка Stop). Появится кнопка <strong>График</strong>, нажмите её.</li>
-    <li>Выберите ось X и ось Y из списка переменных, для которых есть накопленные данные.</li>
-    <li>Нажмите <strong>Построить</strong>.
-        <ul>
-            <li>Если выбрана ось X = «время», будет построен график изменения Y во времени.</li>
-            <li>Если выбрана другая переменная, будет построен график зависимости Y от X (данные синхронизируются по времени; точки выводятся только для моментов, когда есть значения обеих переменных).</li>
-        </ul>
-    </li>
-</ol>
-
-<h3>9.2 Экспорт в CSV</h3>
-<ul>
-    <li>В окне графика нажмите <strong>Экспорт CSV</strong>.</li>
-    <li>Файл сохранится в папку приложения. После сохранения появится диалог для отправки (поделиться).</li>
-</ul>
-
-<h2 id="settings">10. Настройки</h2>
-<p><strong>Боковое меню → Настройки</strong>:</p>
-<ul>
-    <li><strong>ESP настройки</strong> – SSID и пароль точки доступа ESP (по умолчанию <code>MathCad_ESP</code> / <code>12345678</code>).</li>
-    <li><strong>Тема</strong> – светлая/тёмная/системная; цвет акцента (фиолетовый, красный, синий, зелёный, оранжевый).</li>
-    <li><strong>Интервал опроса ESP</strong> – частота запросов к ESP (мс).</li>
-</ul>
-<p>После изменения темы рекомендуется перезапустить приложение.</p>
-
-<h2 id="faq">11. Часто задаваемые вопросы и устранение неполадок</h2>
-<div class="note">
-    <strong>Ошибка «Cleartext HTTP traffic not permitted»</strong><br>
-    Решение: добавьте в <code>AndroidManifest.xml</code> атрибут <code>android:usesCleartextTraffic="true"</code> в тег <code>&lt;application&gt;</code>.
+        <section id="support">
+            <h2>📞 Техподдержка и доработки</h2>
+            <p>Приложение полностью открытое, исходный код на <a href="https://github.com/BLQ07/tuba" target="_blank">GitHub</a>. Все ключевые классы: <code>MainActivity</code>, <code>SheetFragment</code>, <code>ControlFragment</code>, <code>ESPConnector</code>, <code>DataCollector</code>, <code>MatrixManager</code>. Для предложений и отчётов об ошибках используйте Issues.</p>
+            <div class="card card-note">
+                🧪 <strong>Совет по отладке:</strong> включите вкладку «Результаты» → спиннер «Лог», чтобы видеть все действия приложения (подключение, ошибки, отправку переменных). Также можно смотреть Logcat с фильтром <code>ControlFragment</code>, <code>ESPConnector</code>.
+            </div>
+        </section>
+    </div>
+    <footer>
+        © 2026 MathCad для Android — все расчёты офлайн, поддержка ESP32, матриц, графиков и скриптов.
+    </footer>
 </div>
-<div class="note">
-    <strong>Ошибка «Unknown function or variable 'if'»</strong><br>
-    Убедитесь, что лист сохранён, и при вычислении выбран этот лист. Проверьте синтаксис: <code>if условие:</code> (двоеточие обязательно) и <code>endif</code> на отдельной строке.
-</div>
-<div class="note">
-    <strong>Ошибка «Operator is unknown for token» в условии</strong><br>
-    Парсер не понимает операторы сравнения. Используйте функции <code>lt()</code>, <code>gt()</code>, <code>le()</code>, <code>ge()</code>, <code>eq()</code>, <code>neq()</code> напрямую, например <code>lt(x,10)</code>.
-</div>
-<div class="note">
-    <strong>Не отображаются строки таблицы в спиннере</strong><br>
-    Убедитесь, что таблица создана с заголовком <code>name</code>, и в ней есть строки. После добавления строк закройте редактор таблицы и снова выберите таблицу на главном экране.
-</div>
-<div class="note">
-    <strong>График не отображает все точки</strong><br>
-    Убедитесь, что в <code>MainActivity</code> и <code>GraphActivity</code> данные получаются через <code>MyApplication.getDataCollector()</code> (единый экземпляр).
-</div>
-<div class="note">
-    <strong>Ошибка «Connection reset» при отправке переменной</strong><br>
-    ESP может не успевать обрабатывать частые запросы. В приложении добавлена задержка (debounce) 200 мс, но если проблема сохраняется, увеличьте задержку в коде или используйте очередь с повторными попытками.
-</div>
-<div class="note">
-    <strong>Имена переменных</strong><br>
-    Рекомендуется использовать латиницу, цифры, подчёркивание, начинать с буквы. Избегайте имён <code>pi</code>, <code>e</code>, <code>sin</code>, <code>cos</code> и т.п. (зарезервированы).
-</div>
-
-<footer>
-    &copy; 2025 MathCad для Android. Все права защищены.<br>
-    При возникновении вопросов обращайтесь к логам (Logcat, фильтр по тегам <code>MainActivity</code>, <code>ESPConnector</code>, <code>DataCollector</code>).
-</footer>
 </body>
 </html>

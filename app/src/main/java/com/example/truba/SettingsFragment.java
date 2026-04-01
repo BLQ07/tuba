@@ -1,6 +1,8 @@
 package com.example.truba;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
@@ -14,8 +16,14 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class SettingsFragment extends Fragment {
 
@@ -25,7 +33,34 @@ public class SettingsFragment extends Fragment {
     private TextView textInterval;
     private Button btnSave;
     private MainViewModel viewModel;
+    private void openHtmlFromAssets()  {
+        try {
+            // Копируем файл из assets во временный файл
+            InputStream inputStream =getContext(). getAssets().open("index.html");
+            File tempFile = new File(getContext(). getCacheDir(), "instruction.html");
+            FileOutputStream outputStream = new FileOutputStream(tempFile);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+            outputStream.close();
+            inputStream.close();
 
+            // Получаем URI через FileProvider
+            Uri uri = FileProvider.getUriForFile(getContext(),  getContext().getPackageName() + ".fileprovider", tempFile);
+
+            // Открываем в браузере
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(uri, "text/html");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Ошибка открытия инструкции", Toast.LENGTH_SHORT).show();
+        }
+    }
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -36,7 +71,10 @@ public class SettingsFragment extends Fragment {
         seekBar = view.findViewById(R.id.seekBar);
         textInterval = view.findViewById(R.id.textInterval);
         btnSave = view.findViewById(R.id.btn_save);
-
+Button ex=view.findViewById(R.id.button);
+ex.setOnClickListener(
+        view1 -> openHtmlFromAssets()
+);
         viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
         // Загрузка настроек
