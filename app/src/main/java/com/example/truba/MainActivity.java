@@ -181,6 +181,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     }
 
     public void startPolling() {
+        dataCollector.clear();
         if (!espConnector.isConnectedToESP()) {
             Toast.makeText(this, "Не подключено к ESP", Toast.LENGTH_SHORT).show();
             return;

@@ -273,10 +273,10 @@ public class ControlFragment extends Fragment {
         };
 
         // Запускаем подключение
-        connectivityManager.requestNetwork(request, networkCallback);
+       // connectivityManager.requestNetwork(request, networkCallback);
 
         // Показываем уведомление
-        Toast.makeText(getContext(), "Подключение к " + ssid + "...", Toast.LENGTH_SHORT).show();
+       // Toast.makeText(getContext(), "Подключение к " + ssid + "...", Toast.LENGTH_SHORT).show();
     }
 
     private void stopAutoConnect() {
@@ -352,9 +352,7 @@ public class ControlFragment extends Fragment {
         Network boundNetwork = connectivityManager.getBoundNetworkForProcess();
         if (boundNetwork != null) {
             NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(boundNetwork);
-            if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                return true;
-            }
+            return caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI);
         }
         return false;
     }
