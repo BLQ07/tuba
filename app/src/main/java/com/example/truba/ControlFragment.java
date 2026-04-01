@@ -1,31 +1,22 @@
 package com.example.truba;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.SeekBar;
-import android.widget.Spinner;
-import android.widget.Switch;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-
-import com.example.truba.table.DynamicTableView;
-import com.example.truba.table.TableManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,29 +28,27 @@ public class ControlFragment extends Fragment {
     private Spinner spinnerVariable;
     private SeekBar seekBar;
     private TextView tvSeekValue;
-    private Spinner spinnerTables;
-    private Spinner spinnerTableRows;
-    private Button btnAddConstantFromTable;
     private Button btnPlayStop;
     private Switch switchAutoConnect;
     private TextView tvWifiStatus;
+    private LinearLayout espVariablesContainer;
+    private ScrollView scrollView;
 
     private MainViewModel viewModel;
     private MainActivity activity;
-    private TableManager tableManager;
     private WifiManager wifiManager;
-    private final Handler debounceHandler = new Handler();
+    private Handler debounceHandler = new Handler();
     private Runnable debounceRunnable;
 
     private static final String ESP_SSID = "MathCad_ESP";
-    private static final String ESP_PASSWORD = "12345678";
-    private static final int CONNECTION_CHECK_INTERVAL = 3000; // 3 секунды
+    private static final int CONNECTION_CHECK_INTERVAL = 5000;
+    private Handler monitoringHandler = new Handler();
+    private Runnable monitoringRunnable;
 
     @Override
     public void onAttach(@NonNull android.content.Context context) {
         super.onAttach(context);
         activity = (MainActivity) requireActivity();
-        tableManager = activity.getTableManager();
         wifiManager = (WifiManager) requireContext().getApplicationContext().getSystemService(android.content.Context.WIFI_SERVICE);
     }
 
@@ -71,20 +60,19 @@ public class ControlFragment extends Fragment {
         spinnerVariable = view.findViewById(R.id.spinner_variable);
         seekBar = view.findViewById(R.id.seekBar);
         tvSeekValue = view.findViewById(R.id.tv_seek_value);
-        spinnerTables = view.findViewById(R.id.spinner_tables);
-        spinnerTableRows = view.findViewById(R.id.spinner_table_rows);
-        btnAddConstantFromTable = view.findViewById(R.id.btn_add_constant_from_table);
         btnPlayStop = view.findViewById(R.id.btn_play_stop);
         switchAutoConnect = view.findViewById(R.id.switch_auto_connect);
         tvWifiStatus = view.findViewById(R.id.tv_wifi_status);
+        espVariablesContainer = view.findViewById(R.id.esp_variables_container);
+        scrollView = view.findViewById(R.id.scroll_view);
 
         viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
         setupVariableSpinner();
         setupSeekBar();
-        setupTableUI();
         setupPlayStopButton();
         setupAutoConnect();
+        observeEspData();
 
         return view;
     }
@@ -93,7 +81,7 @@ public class ControlFragment extends Fragment {
         viewModel.getVariableNames().observe(getViewLifecycleOwner(), names -> {
             if (names == null) return;
             List<String> displayNames = new ArrayList<>();
-            for (String name : names) displayNames.add("_" + name);
+            for (String name : names) if (name.startsWith("R"))displayNames.add(name);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, displayNames);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerVariable.setAdapter(adapter);
@@ -150,9 +138,7 @@ public class ControlFragment extends Fragment {
                     double value = seekBar.getProgress();
                     if (debounceRunnable != null) debounceHandler.removeCallbacks(debounceRunnable);
                     debounceRunnable = () -> {
-                        // Отправляем на ESP
                         activity.getEspConnector().sendVariable(selected, value);
-                        // Обновляем постоянную константу, если такая есть
                         ConstantsManager constantsManager = activity.getConstantsManager();
                         List<ConstantsManager.ConstantInfo> constants = constantsManager.getAllConstants();
                         for (ConstantsManager.ConstantInfo info : constants) {
@@ -161,7 +147,6 @@ public class ControlFragment extends Fragment {
                                 break;
                             }
                         }
-                        // Обновляем значения в ViewModel
                         Map<String, Double> values = viewModel.getVariableValues().getValue();
                         if (values != null) {
                             values.put(selected, value);
@@ -174,95 +159,6 @@ public class ControlFragment extends Fragment {
         });
     }
 
-    private void setupTableUI() {
-        refreshTableSpinner();
-
-        spinnerTables.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String tableName = (String) parent.getItemAtPosition(position);
-                if (tableName != null && !tableName.equals("Нет таблиц")) {
-                    refreshRowSpinner(tableName);
-                } else {
-                    spinnerTableRows.setAdapter(null);
-                }
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        btnAddConstantFromTable.setOnClickListener(v -> {
-            String tableName = (String) spinnerTables.getSelectedItem();
-            String selectedRowName = (String) spinnerTableRows.getSelectedItem();
-            if (tableName == null || tableName.equals("Нет таблиц") || selectedRowName == null) {
-                Toast.makeText(getContext(), "Выберите таблицу и строку", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            DynamicTableView tempView = new DynamicTableView(requireContext());
-            tempView.setPrefsName(tableManager.getPrefsNameForTable(tableName));
-            List<String> headers = tableManager.getHeaders(tableName);
-            if (headers == null) return;
-            tempView.setHeaders(headers);
-            tempView.refreshData();
-
-            int nameIndex = headers.indexOf("name");
-            if (nameIndex == -1) return;
-
-            DynamicTableView.TableRowData row = tempView.getRowByColumnValue("name", selectedRowName);
-            if (row != null && row.values != null) {
-                int addedCount = 0;
-                for (int i = 0; i < headers.size(); i++) {
-                    String colName = headers.get(i);
-                    if ("ID".equalsIgnoreCase(colName)) continue;
-                    String valueStr = (i < row.values.length) ? row.values[i] : "";
-                    if (valueStr == null || valueStr.trim().isEmpty()) continue;
-                    try {
-                        double val = Double.parseDouble(valueStr);
-                        activity.addSessionConstant(colName, val);
-                        addedCount++;
-                    } catch (NumberFormatException ignored) {}
-                }
-                if (addedCount > 0) {
-                    Toast.makeText(getContext(), "Добавлено " + addedCount + " временных констант", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(getContext(), "Нет числовых значений", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    private void refreshTableSpinner() {
-        List<String> tableNames = tableManager.getTableNames();
-        if (tableNames.isEmpty()) tableNames.add("Нет таблиц");
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, tableNames);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerTables.setAdapter(adapter);
-    }
-
-    private void refreshRowSpinner(String tableName) {
-        List<String> rowNames = new ArrayList<>();
-        DynamicTableView tempView = new DynamicTableView(requireContext());
-        tempView.setPrefsName(tableManager.getPrefsNameForTable(tableName));
-        List<String> headers = tableManager.getHeaders(tableName);
-        if (headers == null) return;
-        tempView.setHeaders(headers);
-        tempView.refreshData();
-
-        int nameIndex = headers.indexOf("name");
-        if (nameIndex == -1) return;
-
-        for (DynamicTableView.TableRowData row : tempView.getAllRows()) {
-            if (row.values != null && row.values.length > nameIndex && row.values[nameIndex] != null && !row.values[nameIndex].isEmpty()) {
-                rowNames.add(row.values[nameIndex]);
-            }
-        }
-        if (rowNames.isEmpty()) rowNames.add("Нет строк");
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, rowNames);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerTableRows.setAdapter(adapter);
-    }
-
     private void setupPlayStopButton() {
         viewModel.getIsPolling().observe(getViewLifecycleOwner(), isPolling -> {
             btnPlayStop.setText(isPolling ? "Stop" : "Play");
@@ -272,64 +168,83 @@ public class ControlFragment extends Fragment {
     }
 
     private void setupAutoConnect() {
-        // Загружаем настройки
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean autoConnectEnabled = prefs.getBoolean("auto_connect_esp", true);
         switchAutoConnect.setChecked(autoConnectEnabled);
-
-        // Обновляем статус Wi-Fi
         updateWifiStatus();
 
-        // Слушатель изменения переключателя
-        switchAutoConnect.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // Сохраняем настройку
-                prefs.edit().putBoolean("auto_connect_esp", isChecked).apply();
-
-                if (isChecked) {
-                    // Включаем автоматическое подключение
-                    Toast.makeText(getContext(), "Автоподключение включено", Toast.LENGTH_SHORT).show();
-                    connectToESPNetwork();
-                    startWifiMonitoring();
-                } else {
-                    // Отключаем автоматическое подключение
-                    Toast.makeText(getContext(), "Автоподключение отключено", Toast.LENGTH_SHORT).show();
-                    stopWifiMonitoring();
-                }
+        switchAutoConnect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("auto_connect_esp", isChecked).apply();
+            if (isChecked) {
+                Toast.makeText(getContext(), "Автоподключение включено", Toast.LENGTH_SHORT).show();
+                checkAndShowGuide();
+                startWifiMonitoring();
+            } else {
+                Toast.makeText(getContext(), "Автоподключение отключено", Toast.LENGTH_SHORT).show();
+                stopWifiMonitoring();
             }
         });
 
-        // Если автоподключение включено, запускаем мониторинг
         if (autoConnectEnabled) {
             startWifiMonitoring();
+            checkAndShowGuide();
         }
     }
 
     private void startWifiMonitoring() {
-        // Периодическая проверка подключения к ESP
-        final Handler handler = new Handler();
-        Runnable checkConnectionRunnable = new Runnable() {
+        if (monitoringRunnable != null) stopWifiMonitoring();
+        monitoringRunnable = new Runnable() {
             @Override
             public void run() {
                 if (switchAutoConnect.isChecked()) {
                     updateWifiStatus();
-
-                    // Если не подключены к ESP и Wi-Fi включён, пробуем подключиться
-                    if (!isConnectedToESP() && wifiManager.isWifiEnabled()) {
-                        connectToESPNetwork();
-                    }
-
-                    // Повторяем проверку
-                    handler.postDelayed(this, CONNECTION_CHECK_INTERVAL);
+                    monitoringHandler.postDelayed(this, CONNECTION_CHECK_INTERVAL);
                 }
             }
         };
-        handler.post(checkConnectionRunnable);
+        monitoringHandler.post(monitoringRunnable);
     }
 
     private void stopWifiMonitoring() {
-        // Останавливаем мониторинг (Handler будет продолжать, но проверка switchAutoConnect.isChecked() вернёт false)
+        if (monitoringRunnable != null) {
+            monitoringHandler.removeCallbacks(monitoringRunnable);
+            monitoringRunnable = null;
+        }
+    }
+
+    private void checkAndShowGuide() {
+        if (isConnectedToESP()) {
+            tvWifiStatus.setText("Подключено к ESP");
+            tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+            if (!viewModel.getIsPolling().getValue()) {
+                activity.startPolling();
+            }
+        } else {
+            showManualConnectionGuide();
+        }
+    }
+
+    private void showManualConnectionGuide() {
+        String ssid = getEspSsid();
+        String password = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString("esp_password", "12345678");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Подключение к ESP");
+        builder.setMessage("Для работы с ESP необходимо подключиться к сети:\n\n" +
+                "📡 Сеть: \"" + ssid + "\"\n" +
+                "🔑 Пароль: " + password + "\n\n" +
+                "Пожалуйста, подключитесь вручную через настройки Wi-Fi, затем вернитесь в приложение.");
+        builder.setPositiveButton("Открыть настройки", (d, w) -> {
+            startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+        });
+        builder.setNegativeButton("Отмена", null);
+        builder.setCancelable(false);
+        builder.show();
+    }
+
+    private String getEspSsid() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        return prefs.getString("esp_ssid", ESP_SSID);
     }
 
     private void updateWifiStatus() {
@@ -338,7 +253,10 @@ public class ControlFragment extends Fragment {
             tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
         } else if (wifiManager.isWifiEnabled()) {
             String currentSsid = getCurrentSsid();
-            if (currentSsid != null && !currentSsid.isEmpty()) {
+            if (currentSsid != null && !currentSsid.isEmpty() && !currentSsid.equals("0x")) {
+                if (currentSsid.startsWith("\"") && currentSsid.endsWith("\"")) {
+                    currentSsid = currentSsid.substring(1, currentSsid.length() - 1);
+                }
                 tvWifiStatus.setText("Подключено к: " + currentSsid);
                 tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
             } else {
@@ -360,7 +278,7 @@ public class ControlFragment extends Fragment {
                 if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
                     ssid = ssid.substring(1, ssid.length() - 1);
                 }
-                return ESP_SSID.equals(ssid);
+                return getEspSsid().equals(ssid);
             }
         }
         return false;
@@ -369,75 +287,54 @@ public class ControlFragment extends Fragment {
     private String getCurrentSsid() {
         try {
             android.net.wifi.WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-            if (wifiInfo != null) {
-                return wifiInfo.getSSID();
-            }
+            if (wifiInfo != null) return wifiInfo.getSSID();
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private void connectToESPNetwork() {
-        if (!wifiManager.isWifiEnabled()) {
-            wifiManager.setWifiEnabled(true);
-            // Ждём включения Wi-Fi
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    private void observeEspData() {
+        viewModel.getEspData().observe(getViewLifecycleOwner(), espData -> {
+            if (espData == null) return;
+            updateEspVariablesDisplay(espData);
+        });
+    }
+
+    private void updateEspVariablesDisplay(Map<String, Double> espData) {
+        espVariablesContainer.removeAllViews();
+        if (espData == null || espData.isEmpty()) {
+            TextView emptyView = new TextView(requireContext());
+            emptyView.setText("Нет данных от ESP");
+            emptyView.setPadding(16, 16, 16, 16);
+            emptyView.setTextSize(12);
+            emptyView.setTextColor(getResources().getColor(android.R.color.darker_gray));
+            espVariablesContainer.addView(emptyView);
+            return;
         }
 
-        // Получаем сохранённые настройки ESP
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        String ssid = prefs.getString("esp_ssid", ESP_SSID);
-        String password = prefs.getString("esp_password", ESP_PASSWORD);
+        for (Map.Entry<String, Double> entry : espData.entrySet()) {
+            String varName = entry.getKey();
+            double value = entry.getValue();
 
-        // Создаём конфигурацию сети
-        WifiConfiguration config = new WifiConfiguration();
-        config.SSID = "\"" + ssid + "\"";
-        config.preSharedKey = "\"" + password + "\"";
-        config.status = WifiConfiguration.Status.ENABLED;
-        config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+            View itemView = LayoutInflater.from(requireContext()).inflate(R.layout.esp_variable_item, espVariablesContainer, false);
+            TextView tvName = itemView.findViewById(R.id.tv_var_name);
+            TextView tvValue = itemView.findViewById(R.id.tv_var_value);
 
-        // Удаляем старую конфигурацию, если есть
-        List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();
-        if (configuredNetworks != null) {
-            for (WifiConfiguration existing : configuredNetworks) {
-                if (existing.SSID != null && existing.SSID.equals(config.SSID)) {
-                    wifiManager.removeNetwork(existing.networkId);
-                    break;
-                }
-            }
+
+            tvName.setText(varName);
+            tvValue.setText(String.format(Locale.US, "%.4f", value));
+
+
+
+            espVariablesContainer.addView(itemView);
         }
+    }
 
-        // Добавляем новую конфигурацию
-        int networkId = wifiManager.addNetwork(config);
-        if (networkId != -1) {
-            wifiManager.disconnect();
-            wifiManager.enableNetwork(networkId, true);
-            wifiManager.reconnect();
-            Toast.makeText(getContext(), "Подключение к " + ssid + "...", Toast.LENGTH_SHORT).show();
-
-            // Проверяем подключение через 5 секунд
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    updateWifiStatus();
-                    if (isConnectedToESP()) {
-                        Toast.makeText(getContext(), "Успешно подключено к ESP", Toast.LENGTH_SHORT).show();
-                        // Если ESP подключена, можно автоматически запустить опрос
-                        if (!viewModel.getIsPolling().getValue()) {
-                            activity.startPolling();
-                        }
-                    } else {
-                        Toast.makeText(getContext(), "Не удалось подключиться к ESP", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }, 5000);
-        } else {
-            Toast.makeText(getContext(), "Ошибка подключения к ESP", Toast.LENGTH_SHORT).show();
-        }
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopWifiMonitoring();
+        if (debounceRunnable != null) debounceHandler.removeCallbacks(debounceRunnable);
     }
 }

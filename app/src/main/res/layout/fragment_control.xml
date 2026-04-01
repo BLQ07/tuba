@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    android:id="@+id/scroll_view"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -125,7 +127,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Карточка таблиц данных -->
+        <!-- Карточка переменных ESP -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -141,29 +143,19 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Таблицы данных"
+                    android:text="📡 Переменные ESP"
                     android:textSize="14sp"
                     android:textStyle="bold"/>
 
-                <Spinner
-                    android:id="@+id/spinner_tables"
+                <LinearLayout
+                    android:id="@+id/esp_variables_container"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
                     android:layout_marginTop="8dp"/>
 
-                <Spinner
-                    android:id="@+id/spinner_table_rows"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"/>
-
-                <Button
-                    android:id="@+id/btn_add_constant_from_table"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:text="Добавить как константу"
-                    android:layout_marginTop="12dp"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
     </LinearLayout>
 </ScrollView>

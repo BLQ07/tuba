@@ -22,8 +22,11 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.multidex.BuildConfig;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.example.truba.table.TableManager;
+import com.example.truba.table.TablesActivity;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -68,7 +71,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         constantsManager = new ConstantsManager(this);
         sheetManager = new SheetManager(this);
         tableManager = new TableManager(this);
-        dataCollector = MyApplication.getDataCollector();
+        dataCollector = MathCadApplication.getDataCollector();
         espConnector = new ESPConnector(this);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
@@ -422,7 +425,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         } else if (id == R.id.nav_constants) {
             startActivity(new Intent(this, ConstantsActivity.class));
         } else if (id == R.id.nav_tables) {
-            startActivity(new Intent(this, TablesManagerActivity.class));
+            startActivity(new Intent(this, TablesActivity.class));
         } else if (id == R.id.nav_export_csv) {
             exportCurrentValuesToCSV();
         }

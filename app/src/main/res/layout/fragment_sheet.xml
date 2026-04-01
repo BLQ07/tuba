@@ -76,6 +76,63 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- Карточка таблиц данных -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Таблицы данных"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+            <Spinner
+                android:id="@+id/spinner_tables"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"/>
+
+            <Spinner
+                android:id="@+id/spinner_table_rows"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <Button
+                    android:id="@+id/btn_add_constant_from_table"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="Добавить как константу"
+                    android:layout_marginEnd="4dp"/>
+
+                <Button
+                    android:id="@+id/btn_create_table"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="Создать таблицу"/>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
     <!-- Постоянные константы -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
