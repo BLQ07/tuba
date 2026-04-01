@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,10 +22,8 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.multidex.BuildConfig;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.example.truba.table.TableManager;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -32,7 +31,6 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,7 +55,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     private boolean isPolling = false;
     private Map<String, Double> lastEspData = new HashMap<>();
     private Map<String, Double> sessionConstants = new HashMap<>();
-    private final List<Double> computedResults = new ArrayList<>();
+    private List<Double> computedResults = new ArrayList<>();
 
     private static final int PERMISSION_REQUEST_CODE = 100;
 
@@ -70,7 +68,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         constantsManager = new ConstantsManager(this);
         sheetManager = new SheetManager(this);
         tableManager = new TableManager(this);
-        dataCollector = MathCadApplication.getDataCollector();
+        dataCollector = MyApplication.getDataCollector();
         espConnector = new ESPConnector(this);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
@@ -81,7 +79,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         viewModel.setSessionConstants(sessionConstants);
         viewModel.setComputedResults(computedResults);
 
-        // Инициализация UI
+        // UI
         initViews();
         setupViewPager();
         setupESP();
@@ -132,9 +130,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         });
 
         // Обновление констант при изменении
-        viewModel.getConstantInfos().observe(this, infos -> {
-            updateVariableList();
-        });
+        viewModel.getConstantInfos().observe(this, infos -> updateVariableList());
 
         // Обновление временных констант
         viewModel.getSessionConstants().observe(this, session -> {
@@ -179,9 +175,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         String espSsid = prefs.getString("esp_ssid", "MathCad_ESP");
         String espPassword = prefs.getString("esp_password", "12345678");
         ESPConnector.updateSettings(espSsid, espPassword);
-
-        // Переключатель ESP уже есть в тулбаре, нужно добавить его в разметку
-        // Для простоты будем использовать кнопку Play/Stop из ControlFragment
     }
 
     public void startPolling() {
@@ -198,7 +191,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             viewModel.setEspData(data);
             dataCollector.addData(data);
 
-            // Обновляем вычисления, если есть активный лист
             String sheetContent = viewModel.getCurrentSheetContent().getValue();
             if (sheetContent != null && !sheetContent.isEmpty()) {
                 updateComputation(sheetContent);
@@ -218,11 +210,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     }
 
     public void togglePolling() {
-        if (isPolling) {
-            stopPolling();
-        } else {
-            startPolling();
-        }
+        if (isPolling) stopPolling();
+        else startPolling();
     }
 
     private void updateComputation(String sheetContent) {
@@ -302,15 +291,11 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     }
 
     private Double findVariableValue(String varName, Map<String, Double> tempConstants) {
-        // Ищем во временных константах листа
         if (tempConstants.containsKey(varName)) return tempConstants.get(varName);
-        // Ищем в постоянных константах
         for (ConstantsManager.ConstantInfo info : constantsManager.getAllConstants()) {
             if (info.name.equals(varName)) return info.value;
         }
-        // Ищем в данных ESP
         if (lastEspData.containsKey(varName)) return lastEspData.get(varName);
-        // Ищем в сессионных константах
         if (sessionConstants.containsKey(varName)) return sessionConstants.get(varName);
         return null;
     }
@@ -318,7 +303,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     private double evaluateExpression(String expr, Map<String, Double> tempConstants) throws Exception {
         expr = expr.replace("π", String.valueOf(Math.PI)).replace("e", String.valueOf(Math.E));
 
-        // Собираем все переменные
         java.util.Set<String> vars = new java.util.HashSet<>();
         for (ConstantsManager.ConstantInfo info : constantsManager.getAllConstants()) vars.add(info.name);
         vars.addAll(lastEspData.keySet());
@@ -326,53 +310,12 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         vars.addAll(sessionConstants.keySet());
 
         net.objecthunter.exp4j.ExpressionBuilder builder = new net.objecthunter.exp4j.ExpressionBuilder(expr);
-
-        // Добавляем функцию log (десятичный логарифм)
         builder.function(new net.objecthunter.exp4j.function.Function("log", 1) {
             @Override
             public double apply(double... args) {
                 return Math.log10(args[0]);
             }
         });
-
-        // Добавляем функции сравнения для условий
-        builder.function(new net.objecthunter.exp4j.function.Function("lt", 2) {
-            @Override
-            public double apply(double... args) {
-                return args[0] < args[1] ? 1.0 : 0.0;
-            }
-        });
-        builder.function(new net.objecthunter.exp4j.function.Function("gt", 2) {
-            @Override
-            public double apply(double... args) {
-                return args[0] > args[1] ? 1.0 : 0.0;
-            }
-        });
-        builder.function(new net.objecthunter.exp4j.function.Function("le", 2) {
-            @Override
-            public double apply(double... args) {
-                return args[0] <= args[1] ? 1.0 : 0.0;
-            }
-        });
-        builder.function(new net.objecthunter.exp4j.function.Function("ge", 2) {
-            @Override
-            public double apply(double... args) {
-                return args[0] >= args[1] ? 1.0 : 0.0;
-            }
-        });
-        builder.function(new net.objecthunter.exp4j.function.Function("eq", 2) {
-            @Override
-            public double apply(double... args) {
-                return Math.abs(args[0] - args[1]) < 1e-12 ? 1.0 : 0.0;
-            }
-        });
-        builder.function(new net.objecthunter.exp4j.function.Function("neq", 2) {
-            @Override
-            public double apply(double... args) {
-                return Math.abs(args[0] - args[1]) > 1e-12 ? 1.0 : 0.0;
-            }
-        });
-
         builder.variables(vars);
         net.objecthunter.exp4j.Expression expression = builder.build();
 
@@ -478,11 +421,10 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             viewPager.setCurrentItem(2);
         } else if (id == R.id.nav_constants) {
             startActivity(new Intent(this, ConstantsActivity.class));
+        } else if (id == R.id.nav_tables) {
+            startActivity(new Intent(this, TablesManagerActivity.class));
         } else if (id == R.id.nav_export_csv) {
             exportCurrentValuesToCSV();
-        } else if (id== R.id.nav_tables) {
-            
-
         }
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -508,4 +450,4 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         viewModel.setSheets(sheetManager.getAllSheets());
         updateVariableList();
     }
-}
+                        }
