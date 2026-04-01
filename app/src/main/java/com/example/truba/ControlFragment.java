@@ -1,8 +1,14 @@
 package com.example.truba;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.net.wifi.WifiNetworkSpecifier;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -14,6 +20,7 @@ import android.widget.*;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -36,9 +43,10 @@ public class ControlFragment extends Fragment {
 
     private MainViewModel viewModel;
     private MainActivity activity;
-    private WifiManager wifiManager;
+    private ConnectivityManager connectivityManager;
     private Handler debounceHandler = new Handler();
     private Runnable debounceRunnable;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     private static final String ESP_SSID = "MathCad_ESP";
     private static final int CONNECTION_CHECK_INTERVAL = 5000;
@@ -49,7 +57,7 @@ public class ControlFragment extends Fragment {
     public void onAttach(@NonNull android.content.Context context) {
         super.onAttach(context);
         activity = (MainActivity) requireActivity();
-        wifiManager = (WifiManager) requireContext().getApplicationContext().getSystemService(android.content.Context.WIFI_SERVICE);
+        connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
     @Nullable
@@ -81,7 +89,7 @@ public class ControlFragment extends Fragment {
         viewModel.getVariableNames().observe(getViewLifecycleOwner(), names -> {
             if (names == null) return;
             List<String> displayNames = new ArrayList<>();
-            for (String name : names) if (name.startsWith("R"))displayNames.add(name);
+            for (String name : names) displayNames.add("_" + name);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, displayNames);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerVariable.setAdapter(adapter);
@@ -177,17 +185,106 @@ public class ControlFragment extends Fragment {
             prefs.edit().putBoolean("auto_connect_esp", isChecked).apply();
             if (isChecked) {
                 Toast.makeText(getContext(), "Автоподключение включено", Toast.LENGTH_SHORT).show();
-                checkAndShowGuide();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startAutoConnect();
+                }
                 startWifiMonitoring();
             } else {
                 Toast.makeText(getContext(), "Автоподключение отключено", Toast.LENGTH_SHORT).show();
+                stopAutoConnect();
                 stopWifiMonitoring();
             }
         });
 
         if (autoConnectEnabled) {
             startWifiMonitoring();
-            checkAndShowGuide();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startAutoConnect();
+            }
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private void startAutoConnect() {
+        if (isConnectedToESP()) {
+            updateWifiStatus();
+            if (!viewModel.getIsPolling().getValue()) {
+                activity.startPolling();
+            }
+            return;
+        }
+
+        String ssid = getEspSsid();
+        String password = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString("esp_password", "12345678");
+
+        // Создаём спецификатор сети
+        WifiNetworkSpecifier specifier = new WifiNetworkSpecifier.Builder()
+                .setSsid(ssid)
+                .setWpa2Passphrase(password)
+                .build();
+
+        // Создаём запрос сети
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .setNetworkSpecifier(specifier)
+                .build();
+
+        // Удаляем старый callback, если есть
+        if (networkCallback != null) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            } catch (Exception ignored) {}
+        }
+
+        // Создаём новый callback
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                super.onAvailable(network);
+                // Привязываем процесс к сети
+                connectivityManager.bindProcessToNetwork(network);
+
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Подключено к ESP", Toast.LENGTH_SHORT).show();
+                    updateWifiStatus();
+                    if (!viewModel.getIsPolling().getValue()) {
+                        activity.startPolling();
+                    }
+                });
+            }
+
+            @Override
+            public void onUnavailable() {
+                super.onUnavailable();
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Не удалось подключиться к ESP", Toast.LENGTH_LONG).show();
+                    showManualConnectionGuide();
+                });
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                super.onLost(network);
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Соединение с ESP потеряно", Toast.LENGTH_SHORT).show();
+                    updateWifiStatus();
+                });
+            }
+        };
+
+        // Запускаем подключение
+        connectivityManager.requestNetwork(request, networkCallback);
+
+        // Показываем уведомление
+        Toast.makeText(getContext(), "Подключение к " + ssid + "...", Toast.LENGTH_SHORT).show();
+    }
+
+    private void stopAutoConnect() {
+        if (networkCallback != null) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+                networkCallback = null;
+            } catch (Exception ignored) {}
         }
     }
 
@@ -198,6 +295,10 @@ public class ControlFragment extends Fragment {
             public void run() {
                 if (switchAutoConnect.isChecked()) {
                     updateWifiStatus();
+                    // Если не подключены и автоподключение включено, пробуем снова
+                    if (!isConnectedToESP() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        startAutoConnect();
+                    }
                     monitoringHandler.postDelayed(this, CONNECTION_CHECK_INTERVAL);
                 }
             }
@@ -212,28 +313,17 @@ public class ControlFragment extends Fragment {
         }
     }
 
-    private void checkAndShowGuide() {
-        if (isConnectedToESP()) {
-            tvWifiStatus.setText("Подключено к ESP");
-            tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-            if (!viewModel.getIsPolling().getValue()) {
-                activity.startPolling();
-            }
-        } else {
-            showManualConnectionGuide();
-        }
-    }
-
     private void showManualConnectionGuide() {
         String ssid = getEspSsid();
         String password = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString("esp_password", "12345678");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Подключение к ESP");
-        builder.setMessage("Для работы с ESP необходимо подключиться к сети:\n\n" +
+        builder.setMessage("Не удалось автоматически подключиться к ESP.\n\n" +
+                "Попробуйте подключиться вручную:\n\n" +
                 "📡 Сеть: \"" + ssid + "\"\n" +
                 "🔑 Пароль: " + password + "\n\n" +
-                "Пожалуйста, подключитесь вручную через настройки Wi-Fi, затем вернитесь в приложение.");
+                "После подключения вернитесь в приложение.");
         builder.setPositiveButton("Открыть настройки", (d, w) -> {
             startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
         });
@@ -251,47 +341,22 @@ public class ControlFragment extends Fragment {
         if (isConnectedToESP()) {
             tvWifiStatus.setText("Подключено к ESP");
             tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-        } else if (wifiManager.isWifiEnabled()) {
-            String currentSsid = getCurrentSsid();
-            if (currentSsid != null && !currentSsid.isEmpty() && !currentSsid.equals("0x")) {
-                if (currentSsid.startsWith("\"") && currentSsid.endsWith("\"")) {
-                    currentSsid = currentSsid.substring(1, currentSsid.length() - 1);
-                }
-                tvWifiStatus.setText("Подключено к: " + currentSsid);
-                tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
-            } else {
-                tvWifiStatus.setText("Wi-Fi включён, не подключён");
-                tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
-            }
         } else {
-            tvWifiStatus.setText("Wi-Fi выключен");
+            tvWifiStatus.setText("Не подключено к ESP");
             tvWifiStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         }
     }
 
     private boolean isConnectedToESP() {
-        android.net.ConnectivityManager connManager = (android.net.ConnectivityManager) requireContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
-        android.net.NetworkInfo wifiInfo = connManager.getNetworkInfo(android.net.ConnectivityManager.TYPE_WIFI);
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            String ssid = getCurrentSsid();
-            if (ssid != null) {
-                if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
-                    ssid = ssid.substring(1, ssid.length() - 1);
-                }
-                return getEspSsid().equals(ssid);
+        // Проверяем, привязан ли процесс к сети ESP
+        Network boundNetwork = connectivityManager.getBoundNetworkForProcess();
+        if (boundNetwork != null) {
+            NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(boundNetwork);
+            if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return true;
             }
         }
         return false;
-    }
-
-    private String getCurrentSsid() {
-        try {
-            android.net.wifi.WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-            if (wifiInfo != null) return wifiInfo.getSSID();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     private void observeEspData() {
@@ -326,7 +391,6 @@ public class ControlFragment extends Fragment {
             tvValue.setText(String.format(Locale.US, "%.4f", value));
 
 
-
             espVariablesContainer.addView(itemView);
         }
     }
@@ -335,6 +399,7 @@ public class ControlFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         stopWifiMonitoring();
+        stopAutoConnect();
         if (debounceRunnable != null) debounceHandler.removeCallbacks(debounceRunnable);
     }
 }
