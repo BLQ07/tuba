@@ -10,7 +10,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -33,11 +32,9 @@ import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -52,6 +49,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     private ConstantsManager constantsManager;
     private SheetManager sheetManager;
     private TableManager tableManager;
+    private MatrixManager matrixManager;
     private DataCollector dataCollector;
     private WifiManager wifiManager;
 
@@ -67,28 +65,24 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Инициализация менеджеров
         constantsManager = new ConstantsManager(this);
         sheetManager = new SheetManager(this);
         tableManager = new TableManager(this);
+        matrixManager = new MatrixManager(this);
         dataCollector = MathCadApplication.getDataCollector();
         espConnector = new ESPConnector(this);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
-        // ViewModel
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         viewModel.setConstantInfos(constantsManager.getAllConstants());
         viewModel.setSheets(sheetManager.getAllSheets());
         viewModel.setSessionConstants(sessionConstants);
         viewModel.setComputedResults(computedResults);
 
-        // UI
         initViews();
         setupViewPager();
         setupESP();
         checkPermissions();
-
-        // Подписка на изменения
         observeData();
     }
 
@@ -111,7 +105,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     private void setupViewPager() {
         ViewPagerAdapter adapter = new ViewPagerAdapter(this);
         viewPager.setAdapter(adapter);
-
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             switch (position) {
                 case 0: tab.setText("Управление"); break;
@@ -124,18 +117,13 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     }
 
     private void observeData() {
-        // Обновление списка переменных при получении данных от ESP
         viewModel.getEspData().observe(this, data -> {
             if (data != null) {
                 lastEspData = data;
                 updateVariableList();
             }
         });
-
-        // Обновление констант при изменении
         viewModel.getConstantInfos().observe(this, infos -> updateVariableList());
-
-        // Обновление временных констант
         viewModel.getSessionConstants().observe(this, session -> {
             sessionConstants = session;
             updateVariableList();
@@ -150,7 +138,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             names.add(info.name);
             values.put(info.name, info.value);
         }
-
         if (lastEspData != null) {
             for (Map.Entry<String, Double> entry : lastEspData.entrySet()) {
                 if (!names.contains(entry.getKey())) {
@@ -159,21 +146,18 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
                 }
             }
         }
-
         for (Map.Entry<String, Double> entry : sessionConstants.entrySet()) {
             if (!names.contains(entry.getKey())) {
                 names.add(entry.getKey());
                 values.put(entry.getKey(), entry.getValue());
             }
         }
-
         Collections.sort(names);
         viewModel.setVariableNames(names);
         viewModel.setVariableValues(values);
     }
 
     private void setupESP() {
-        // Загрузка настроек ESP
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String espSsid = prefs.getString("esp_ssid", "MathCad_ESP");
         String espPassword = prefs.getString("esp_password", "12345678");
@@ -181,26 +165,21 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     }
 
     public void startPolling() {
-        dataCollector.clear();
         if (!espConnector.isConnectedToESP()) {
             Toast.makeText(this, "Не подключено к ESP", Toast.LENGTH_SHORT).show();
             return;
         }
-
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         int interval = prefs.getInt("poll_interval", 1000);
         espConnector.setPollInterval(interval);
-
         espConnector.startPolling(data -> runOnUiThread(() -> {
             viewModel.setEspData(data);
             dataCollector.addData(data);
-
             String sheetContent = viewModel.getCurrentSheetContent().getValue();
             if (sheetContent != null && !sheetContent.isEmpty()) {
                 updateComputation(sheetContent);
             }
         }));
-
         isPolling = true;
         viewModel.setIsPolling(true);
         Toast.makeText(this, "Опрос начат", Toast.LENGTH_SHORT).show();
@@ -218,79 +197,229 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         else startPolling();
     }
 
+    // ====================== МАТРИЧНЫЕ ФУНКЦИИ ======================
+
+    private String processMatrixFunctions(String expr, Map<String, Double> tempConstants,
+                                          Map<String, Double> loopVariables,
+                                          Map<String, double[][]> tempMatrices) throws Exception {
+        // Обработка matrix(rows, cols, values...)
+        Pattern matrixPattern = Pattern.compile("matrix\\(([^)]+)\\)");
+        Matcher matcher = matrixPattern.matcher(expr);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String args = matcher.group(1);
+            String[] parts = args.split(",");
+            if (parts.length < 2) throw new Exception("matrix: требуется указать rows и cols");
+            int rows = Integer.parseInt(parts[0].trim());
+            int cols = Integer.parseInt(parts[1].trim());
+            if (parts.length - 2 != rows * cols) {
+                throw new Exception("matrix: количество значений не соответствует размеру");
+            }
+            double[] values = new double[rows * cols];
+            for (int i = 2; i < parts.length; i++) {
+                values[i - 2] = evaluateSimpleExpression(parts[i].trim(), tempConstants, loopVariables);
+            }
+            double[][] matrix = new double[rows][cols];
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    matrix[i][j] = values[i * cols + j];
+                }
+            }
+            String tempName = "_mat_" + System.currentTimeMillis() + "_" + (tempMatrices.size());
+            tempMatrices.put(tempName, matrix);
+            matcher.appendReplacement(sb, tempName);
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        // Обработка det(имя)
+        Pattern detPattern = Pattern.compile("det\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)");
+        matcher = detPattern.matcher(expr);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String matName = matcher.group(1);
+            double[][] matrix = getMatrix(matName, tempMatrices);
+            if (matrix == null) throw new Exception("Матрица " + matName + " не найдена");
+            if (matrix.length != matrix[0].length) throw new Exception("det: матрица не квадратная");
+            double det = MatrixManager.determinant(matrix);
+            matcher.appendReplacement(sb, String.valueOf(det));
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        // Обработка trace(имя)
+        Pattern tracePattern = Pattern.compile("trace\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)");
+        matcher = tracePattern.matcher(expr);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String matName = matcher.group(1);
+            double[][] matrix = getMatrix(matName, tempMatrices);
+            if (matrix == null) throw new Exception("Матрица " + matName + " не найдена");
+            double trace = MatrixManager.trace(matrix);
+            matcher.appendReplacement(sb, String.valueOf(trace));
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        // Обработка inv(имя)
+        Pattern invPattern = Pattern.compile("inv\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)");
+        matcher = invPattern.matcher(expr);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String matName = matcher.group(1);
+            double[][] matrix = getMatrix(matName, tempMatrices);
+            if (matrix == null) throw new Exception("Матрица " + matName + " не найдена");
+            double[][] inv = MatrixManager.inverse(matrix);
+            String tempName = "_inv_" + System.currentTimeMillis() + "_" + (tempMatrices.size());
+            tempMatrices.put(tempName, inv);
+            matcher.appendReplacement(sb, tempName);
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        // Обработка transpose(имя)
+        Pattern transPattern = Pattern.compile("transpose\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)");
+        matcher = transPattern.matcher(expr);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String matName = matcher.group(1);
+            double[][] matrix = getMatrix(matName, tempMatrices);
+            if (matrix == null) throw new Exception("Матрица " + matName + " не найдена");
+            double[][] trans = MatrixManager.transpose(matrix);
+            String tempName = "_trans_" + System.currentTimeMillis() + "_" + (tempMatrices.size());
+            tempMatrices.put(tempName, trans);
+            matcher.appendReplacement(sb, tempName);
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        // Обработка add/subtract/multiply/emul
+        Pattern binaryPattern = Pattern.compile("(add|subtract|multiply|emul)\\(([a-zA-Z_][a-zA-Z0-9_]*),([a-zA-Z_][a-zA-Z0-9_]*)\\)");
+        matcher = binaryPattern.matcher(expr);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String func = matcher.group(1);
+            String matName1 = matcher.group(2);
+            String matName2 = matcher.group(3);
+            double[][] A = getMatrix(matName1, tempMatrices);
+            double[][] B = getMatrix(matName2, tempMatrices);
+            if (A == null || B == null) throw new Exception("Матрица не найдена для " + func);
+            double[][] result;
+            switch (func) {
+                case "add": result = MatrixManager.add(A, B); break;
+                case "subtract": result = MatrixManager.subtract(A, B); break;
+                case "multiply": result = MatrixManager.multiply(A, B); break;
+                case "emul": result = MatrixManager.elementWiseMultiply(A, B); break;
+                default: throw new Exception("Неизвестная функция " + func);
+            }
+            String tempName = "_" + func + "_" + System.currentTimeMillis() + "_" + (tempMatrices.size());
+            tempMatrices.put(tempName, result);
+            matcher.appendReplacement(sb, tempName);
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        // Обработка доступа к элементам матрицы A[i][j]
+        Pattern elemPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*)\\[([0-9]+)\\]\\[([0-9]+)\\]");
+        matcher = elemPattern.matcher(expr);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String matName = matcher.group(1);
+            int row = Integer.parseInt(matcher.group(2));
+            int col = Integer.parseInt(matcher.group(3));
+            double[][] matrix = getMatrix(matName, tempMatrices);
+            if (matrix == null) throw new Exception("Матрица " + matName + " не найдена");
+            if (row >= matrix.length || col >= matrix[0].length) {
+                throw new Exception("Индекс вне границ матрицы " + matName);
+            }
+            double value = matrix[row][col];
+            matcher.appendReplacement(sb, String.valueOf(value));
+        }
+        matcher.appendTail(sb);
+        expr = sb.toString();
+
+        return expr;
+    }
+
+    private double[][] getMatrix(String name, Map<String, double[][]> tempMatrices) {
+        if (tempMatrices.containsKey(name)) return tempMatrices.get(name);
+        return matrixManager.getMatrix(name);
+    }
+
+    private double evaluateSimpleExpression(String expr, Map<String, Double> tempConstants,
+                                            Map<String, Double> loopVariables) throws Exception {
+        return evaluateExpression(expr, tempConstants, loopVariables);
+    }
+
     private void updateComputation(String sheetContent) {
         String[] lines = sheetContent.split("\\r?\\n");
         StringBuilder results = new StringBuilder();
         Map<String, Double> tempConstants = new HashMap<>();
+        Map<String, double[][]> tempMatrices = new HashMap<>();
 
         for (String line : lines) {
             line = line.trim();
             if (line.isEmpty()) continue;
 
-            // print(имя)
-            if (line.matches("print\\([a-zA-Z_][a-zA-Z0-9_]*\\)")) {
-                String varName = line.substring(6, line.length() - 1).trim();
-                Double value = findVariableValue(varName, tempConstants);
-                if (value != null) {
-                    espConnector.sendVariable(varName, value);
-                    results.append("print(").append(varName).append(") = ")
-                            .append(String.format(java.util.Locale.US, "%.6f", value))
-                            .append(" - отправлено на ESP\n");
-                } else {
-                    results.append("Ошибка: переменная '").append(varName).append("' не найдена\n");
-                }
-                continue;
-            }
+            try {
+                // Обрабатываем матричные функции
+                String processed = processMatrixFunctions(line, tempConstants, new HashMap<>(), tempMatrices);
 
-            // print(имя, выражение)
-            if (line.startsWith("print(") && line.contains(",") && line.endsWith(")")) {
-                String params = line.substring(6, line.length() - 1);
-                String[] parts = params.split(",", 2);
-                if (parts.length == 2) {
-                    String varName = parts[0].trim();
-                    String valueExpr = parts[1].trim();
-                    try {
-                        double value = evaluateExpression(valueExpr, tempConstants);
+                // print(имя)
+                if (processed.matches("print\\([a-zA-Z_][a-zA-Z0-9_]*\\)")) {
+                    String varName = processed.substring(6, processed.length() - 1).trim();
+                    Double value = findVariableValue(varName, tempConstants);
+                    if (value != null) {
+                        espConnector.sendVariable(varName, value);
+                        results.append("print(").append(varName).append(") = ")
+                                .append(String.format(Locale.US, "%.6f", value))
+                                .append(" - отправлено на ESP\n");
+                    } else {
+                        results.append("Ошибка: переменная '").append(varName).append("' не найдена\n");
+                    }
+                    continue;
+                }
+
+                // print(имя, выражение)
+                if (processed.startsWith("print(") && processed.contains(",") && processed.endsWith(")")) {
+                    String params = processed.substring(6, processed.length() - 1);
+                    String[] parts = params.split(",", 2);
+                    if (parts.length == 2) {
+                        String varName = parts[0].trim();
+                        String valueExpr = parts[1].trim();
+                        double value = evaluateExpression(valueExpr, tempConstants, new HashMap<>());
                         espConnector.sendVariable(varName, value);
                         results.append("print(").append(varName).append(", ")
-                                .append(String.format(java.util.Locale.US, "%.6f", value))
+                                .append(String.format(Locale.US, "%.6f", value))
                                 .append(") - отправлено на ESP\n");
-                    } catch (Exception e) {
-                        results.append("Ошибка в print: ").append(e.getMessage()).append("\n");
                     }
+                    continue;
                 }
-                continue;
-            }
 
-            // Присваивание
-            int assignPos = line.indexOf(":=");
-            if (assignPos >= 0) {
-                String left = line.substring(0, assignPos).trim();
-                String right = line.substring(assignPos + 2).trim();
-                try {
-                    double val = evaluateExpression(right, tempConstants);
+                // Присваивание
+                int assignPos = processed.indexOf(":=");
+                if (assignPos >= 0) {
+                    String left = processed.substring(0, assignPos).trim();
+                    String right = processed.substring(assignPos + 2).trim();
+                    double val = evaluateExpression(right, tempConstants, new HashMap<>());
                     tempConstants.put(left, val);
-                    results.append(left).append(" = ").append(String.format(java.util.Locale.US, "%.4f", val)).append("\n");
+                    results.append(left).append(" = ").append(String.format(Locale.US, "%.4f", val)).append("\n");
                     dataCollector.addData(Collections.singletonMap(left, val));
-                } catch (Exception e) {
-                    results.append("Ошибка: ").append(e.getMessage()).append("\n");
+                    continue;
                 }
-                continue;
-            }
 
-            // Обычное выражение
-            try {
-                double val = evaluateExpression(line, tempConstants);
-                results.append(String.format(java.util.Locale.US, "%.6f", val)).append("\n");
+                // Обычное выражение
+                double val = evaluateExpression(processed, tempConstants, new HashMap<>());
+                results.append(String.format(Locale.US, "%.6f", val)).append("\n");
                 computedResults.add(val);
                 if (computedResults.size() > 200) computedResults.remove(0);
                 dataCollector.addData(Collections.singletonMap("result", val));
                 viewModel.setComputedResults(computedResults);
+
             } catch (Exception e) {
                 results.append("Ошибка: ").append(e.getMessage()).append("\n");
             }
         }
-
         viewModel.setResults(results.toString());
     }
 
@@ -304,21 +433,20 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         return null;
     }
 
-    private double evaluateExpression(String expr, Map<String, Double> tempConstants) throws Exception {
+    private double evaluateExpression(String expr, Map<String, Double> tempConstants,
+                                      Map<String, Double> loopVariables) throws Exception {
         expr = expr.replace("π", String.valueOf(Math.PI)).replace("e", String.valueOf(Math.E));
-
-        java.util.Set<String> vars = new java.util.HashSet<>();
+        Set<String> vars = new HashSet<>();
         for (ConstantsManager.ConstantInfo info : constantsManager.getAllConstants()) vars.add(info.name);
         vars.addAll(lastEspData.keySet());
         vars.addAll(tempConstants.keySet());
+        vars.addAll(loopVariables.keySet());
         vars.addAll(sessionConstants.keySet());
 
         net.objecthunter.exp4j.ExpressionBuilder builder = new net.objecthunter.exp4j.ExpressionBuilder(expr);
         builder.function(new net.objecthunter.exp4j.function.Function("log", 1) {
             @Override
-            public double apply(double... args) {
-                return Math.log10(args[0]);
-            }
+            public double apply(double... args) { return Math.log10(args[0]); }
         });
         builder.variables(vars);
         net.objecthunter.exp4j.Expression expression = builder.build();
@@ -326,34 +454,23 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         for (String var : vars) {
             double val = Double.NaN;
             for (ConstantsManager.ConstantInfo info : constantsManager.getAllConstants()) {
-                if (info.name.equals(var)) {
-                    val = info.value;
-                    break;
-                }
+                if (info.name.equals(var)) { val = info.value; break; }
             }
-            if (!Double.isNaN(val)) {
-                expression.setVariable(var, val);
-            } else if (lastEspData.containsKey(var)) {
-                expression.setVariable(var, lastEspData.get(var));
-            } else if (tempConstants.containsKey(var)) {
-                expression.setVariable(var, tempConstants.get(var));
-            } else if (sessionConstants.containsKey(var)) {
-                expression.setVariable(var, sessionConstants.get(var));
-            }
+            if (!Double.isNaN(val)) expression.setVariable(var, val);
+            else if (lastEspData.containsKey(var)) expression.setVariable(var, lastEspData.get(var));
+            else if (tempConstants.containsKey(var)) expression.setVariable(var, tempConstants.get(var));
+            else if (loopVariables.containsKey(var)) expression.setVariable(var, loopVariables.get(var));
+            else if (sessionConstants.containsKey(var)) expression.setVariable(var, sessionConstants.get(var));
         }
         return expression.evaluate();
     }
 
-    public void updateSheetComputation(String sheetContent) {
-        updateComputation(sheetContent);
-    }
-
+    public void updateSheetComputation(String sheetContent) { updateComputation(sheetContent); }
     public void addSessionConstant(String name, double value) {
         sessionConstants.put(name, value);
         viewModel.setSessionConstants(sessionConstants);
         updateVariableList();
     }
-
     public void clearSessionConstants() {
         sessionConstants.clear();
         viewModel.setSessionConstants(sessionConstants);
@@ -366,29 +483,23 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             String fileName = "values_" + System.currentTimeMillis() + ".csv";
             File csvFile = new File(getExternalFilesDir(null), fileName);
             FileWriter writer = new FileWriter(csvFile);
-
             writer.append("Переменная,Значение\n");
-
             for (ConstantsManager.ConstantInfo info : constantsManager.getAllConstants()) {
                 writer.append(info.name).append(",").append(String.valueOf(info.value)).append("\n");
             }
-
             if (lastEspData != null) {
                 for (Map.Entry<String, Double> entry : lastEspData.entrySet()) {
                     writer.append(entry.getKey()).append(",").append(String.valueOf(entry.getValue())).append("\n");
                 }
             }
-
             writer.close();
             Toast.makeText(this, "CSV сохранён: " + csvFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
-
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
             shareIntent.setType("text/csv");
             shareIntent.putExtra(Intent.EXTRA_STREAM, androidx.core.content.FileProvider.getUriForFile(this,
                     BuildConfig.APPLICATION_ID + ".fileprovider", csvFile));
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(Intent.createChooser(shareIntent, "Поделиться CSV"));
-
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -419,17 +530,11 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.nav_settings) {
-            viewPager.setCurrentItem(4);
-        } else if (id == R.id.nav_sheets) {
-            viewPager.setCurrentItem(2);
-        } else if (id == R.id.nav_constants) {
-            startActivity(new Intent(this, ConstantsActivity.class));
-        } else if (id == R.id.nav_tables) {
-            startActivity(new Intent(this, TablesActivity.class));
-        } else if (id == R.id.nav_export_csv) {
-            exportCurrentValuesToCSV();
-        }
+        if (id == R.id.nav_settings) viewPager.setCurrentItem(4);
+        else if (id == R.id.nav_sheets) viewPager.setCurrentItem(2);
+        else if (id == R.id.nav_constants) startActivity(new Intent(this, ConstantsActivity.class));
+        else if (id == R.id.nav_tables) startActivity(new Intent(this, TablesActivity.class));
+        else if (id == R.id.nav_export_csv) exportCurrentValuesToCSV();
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -454,4 +559,4 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         viewModel.setSheets(sheetManager.getAllSheets());
         updateVariableList();
     }
-                        }
+}

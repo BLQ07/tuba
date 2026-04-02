@@ -89,7 +89,7 @@ public class ControlFragment extends Fragment {
         viewModel.getVariableNames().observe(getViewLifecycleOwner(), names -> {
             if (names == null) return;
             List<String> displayNames = new ArrayList<>();
-            for (String name : names) displayNames.add("_" + name);
+            for (String name : names)if(name.startsWith("R")) displayNames.add(name);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, displayNames);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerVariable.setAdapter(adapter);

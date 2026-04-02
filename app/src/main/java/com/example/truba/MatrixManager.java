@@ -18,6 +18,86 @@ public class MatrixManager {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         gson = new Gson();
     }
+    // Добавьте эти методы, если их нет
+    public static double[][] add(double[][] A, double[][] B) {
+        int rows = A.length, cols = A[0].length;
+        double[][] C = new double[rows][cols];
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                C[i][j] = A[i][j] + B[i][j];
+        return C;
+    }
+
+    public static double[][] subtract(double[][] A, double[][] B) {
+        int rows = A.length, cols = A[0].length;
+        double[][] C = new double[rows][cols];
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                C[i][j] = A[i][j] - B[i][j];
+        return C;
+    }
+
+    public static double[][] multiply(double[][] A, double[][] B) {
+        int m = A.length, n = A[0].length, p = B[0].length;
+        double[][] C = new double[m][p];
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < p; j++)
+                for (int k = 0; k < n; k++)
+                    C[i][j] += A[i][k] * B[k][j];
+        return C;
+    }
+
+    public static double[][] elementWiseMultiply(double[][] A, double[][] B) {
+        int rows = A.length, cols = A[0].length;
+        double[][] C = new double[rows][cols];
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                C[i][j] = A[i][j] * B[i][j];
+        return C;
+    }
+
+    public static double[][] transpose(double[][] A) {
+        int rows = A.length, cols = A[0].length;
+        double[][] T = new double[cols][rows];
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                T[j][i] = A[i][j];
+        return T;
+    }
+
+    public static double[][] inverse(double[][] A) {
+        int n = A.length;
+        double[][] augmented = new double[n][2*n];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(A[i], 0, augmented[i], 0, n);
+            augmented[i][n+i] = 1;
+        }
+        for (int i = 0; i < n; i++) {
+            int maxRow = i;
+            for (int k = i+1; k < n; k++)
+                if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i]))
+                    maxRow = k;
+            double[] temp = augmented[i];
+            augmented[i] = augmented[maxRow];
+            augmented[maxRow] = temp;
+            double pivot = augmented[i][i];
+            if (Math.abs(pivot) < 1e-12)
+                throw new IllegalArgumentException("Матрица вырождена");
+            for (int j = i; j < 2*n; j++)
+                augmented[i][j] /= pivot;
+            for (int k = 0; k < n; k++) {
+                if (k != i) {
+                    double factor = augmented[k][i];
+                    for (int j = i; j < 2*n; j++)
+                        augmented[k][j] -= factor * augmented[i][j];
+                }
+            }
+        }
+        double[][] inv = new double[n][n];
+        for (int i = 0; i < n; i++)
+            System.arraycopy(augmented[i], n, inv[i], 0, n);
+        return inv;
+    }
 
     public void saveMatrix(String name, double[][] matrix) {
         String json = gson.toJson(matrix);
@@ -52,59 +132,7 @@ public class MatrixManager {
     }
 
     // === Матричные операции (статические) ===
-    public static double[][] add(double[][] A, double[][] B) {
-        if (A.length != B.length || A[0].length != B[0].length)
-            throw new IllegalArgumentException("Размеры не совпадают");
-        int rows = A.length, cols = A[0].length;
-        double[][] C = new double[rows][cols];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                C[i][j] = A[i][j] + B[i][j];
-        return C;
-    }
 
-    public static double[][] subtract(double[][] A, double[][] B) {
-        if (A.length != B.length || A[0].length != B[0].length)
-            throw new IllegalArgumentException("Размеры не совпадают");
-        int rows = A.length, cols = A[0].length;
-        double[][] C = new double[rows][cols];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                C[i][j] = A[i][j] - B[i][j];
-        return C;
-    }
-
-    public static double[][] multiply(double[][] A, double[][] B) {
-        if (A[0].length != B.length)
-            throw new IllegalArgumentException("Несогласованные размеры");
-        int m = A.length, n = A[0].length, p = B[0].length;
-        double[][] C = new double[m][p];
-        for (int i = 0; i < m; i++)
-            for (int j = 0; j < p; j++)
-                for (int k = 0; k < n; k++)
-                    C[i][j] += A[i][k] * B[k][j];
-        return C;
-    }
-
-    public static double[][] elementWiseMultiply(double[][] A, double[][] B) {
-        if (A.length != B.length || A[0].length != B[0].length)
-            throw new IllegalArgumentException("Размеры не совпадают");
-        int rows = A.length, cols = A[0].length;
-        double[][] C = new double[rows][cols];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                C[i][j] = A[i][j] * B[i][j];
-        return C;
-    }
-
-    public static double[][] transpose(double[][] A) {
-        int rows = A.length, cols = A[0].length;
-        double[][] T = new double[cols][rows];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                T[j][i] = A[i][j];
-        return T;
-    }
 
     public static double determinant(double[][] A) {
         int n = A.length;
@@ -133,40 +161,7 @@ public class MatrixManager {
         return sum;
     }
 
-    public static double[][] inverse(double[][] A) {
-        int n = A.length;
-        if (n != A[0].length) throw new IllegalArgumentException("Не квадратная");
-        double[][] augmented = new double[n][2*n];
-        for (int i = 0; i < n; i++) {
-            System.arraycopy(A[i], 0, augmented[i], 0, n);
-            augmented[i][n+i] = 1;
-        }
-        for (int i = 0; i < n; i++) {
-            int maxRow = i;
-            for (int k = i+1; k < n; k++)
-                if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i]))
-                    maxRow = k;
-            double[] temp = augmented[i];
-            augmented[i] = augmented[maxRow];
-            augmented[maxRow] = temp;
-            double pivot = augmented[i][i];
-            if (Math.abs(pivot) < 1e-12)
-                throw new IllegalArgumentException("Матрица вырождена");
-            for (int j = i; j < 2*n; j++)
-                augmented[i][j] /= pivot;
-            for (int k = 0; k < n; k++) {
-                if (k != i) {
-                    double factor = augmented[k][i];
-                    for (int j = i; j < 2*n; j++)
-                        augmented[k][j] -= factor * augmented[i][j];
-                }
-            }
-        }
-        double[][] inv = new double[n][n];
-        for (int i = 0; i < n; i++)
-            System.arraycopy(augmented[i], n, inv[i], 0, n);
-        return inv;
-    }
+
 
     public static int rank(double[][] A) {
         double[][] B = copy(A);
