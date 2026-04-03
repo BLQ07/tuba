@@ -17,6 +17,10 @@
         android:icon="@android:drawable/ic_menu_view"
         android:title="Таблицы" />
     <item
+        android:id="@+id/nav_matrices"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:title="Матрицы" />
+    <item
         android:id="@+id/nav_export_csv"
         android:icon="@android:drawable/ic_menu_save"
         android:title="Экспорт CSV" />
