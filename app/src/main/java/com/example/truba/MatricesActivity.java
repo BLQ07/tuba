@@ -20,7 +20,7 @@ public class MatricesActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_matrices);
+        setContentView(R.layout.activitty_matrices);
 
         matrixManager = new MatrixManager(this);
         matrixNames = new ArrayList<>(matrixManager.getAllMatrices().keySet());

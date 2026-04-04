@@ -81,7 +81,7 @@ public class ControlFragment extends Fragment {
         viewModel.getVariableNames().observe(getViewLifecycleOwner(), names -> {
             if (names == null) return;
             List<String> displayNames = new ArrayList<>();
-            for (String name : names) displayNames.add("_" + name);
+            for (String name : names)if(name.startsWith("R")) displayNames.add(name);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, displayNames);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerVariable.setAdapter(adapter);
@@ -320,15 +320,10 @@ public class ControlFragment extends Fragment {
             View itemView = LayoutInflater.from(requireContext()).inflate(R.layout.esp_variable_item, espVariablesContainer, false);
             TextView tvName = itemView.findViewById(R.id.tv_var_name);
             TextView tvValue = itemView.findViewById(R.id.tv_var_value);
-            Button btnSend = itemView.findViewById(R.id.btn_send_to_esp);
 
             tvName.setText(varName);
             tvValue.setText(String.format(Locale.US, "%.4f", value));
 
-            btnSend.setOnClickListener(v -> {
-                activity.getEspConnector().sendVariable(varName, value);
-                Toast.makeText(getContext(), "Отправлено: " + varName + " = " + value, Toast.LENGTH_SHORT).show();
-            });
 
             espVariablesContainer.addView(itemView);
         }

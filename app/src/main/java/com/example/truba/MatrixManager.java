@@ -2,8 +2,11 @@ package com.example.truba;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,17 +24,24 @@ public class MatrixManager {
     public void saveMatrix(String name, double[][] matrix) {
         String json = gson.toJson(matrix);
         prefs.edit().putString(name, json).apply();
+        Log.d("MatrixManager", "Saved matrix " + name + ": " + matrix.length + "x" + matrix[0].length);
     }
 
     public double[][] getMatrix(String name) {
         String json = prefs.getString(name, null);
-        if (json == null) return null;
+        if (json == null) {
+            Log.d("MatrixManager", "Matrix " + name + " not found");
+            return null;
+        }
         Type type = new TypeToken<double[][]>(){}.getType();
-        return gson.fromJson(json, type);
+        double[][] matrix = gson.fromJson(json, type);
+        Log.d("MatrixManager", "Loaded matrix " + name + ": " + matrix.length + "x" + matrix[0].length);
+        return matrix;
     }
 
     public void removeMatrix(String name) {
         prefs.edit().remove(name).apply();
+        Log.d("MatrixManager", "Removed matrix " + name);
     }
 
     public Map<String, double[][]> getAllMatrices() {
@@ -48,9 +58,11 @@ public class MatrixManager {
 
     public void clearAll() {
         prefs.edit().clear().apply();
+        Log.d("MatrixManager", "Cleared all matrices");
     }
 
-    // Матричные операции
+    // ==================== МАТРИЧНЫЕ ОПЕРАЦИИ ====================
+
     public static double[][] add(double[][] A, double[][] B) {
         checkSameSize(A, B);
         int rows = A.length, cols = A[0].length;
@@ -73,7 +85,7 @@ public class MatrixManager {
 
     public static double[][] multiply(double[][] A, double[][] B) {
         if (A[0].length != B.length)
-            throw new IllegalArgumentException("Несогласованные размеры для умножения");
+            throw new IllegalArgumentException("Несогласованные размеры для умножения: " + A[0].length + " != " + B.length);
         int m = A.length, n = A[0].length, p = B[0].length;
         double[][] C = new double[m][p];
         for (int i = 0; i < m; i++)
@@ -234,7 +246,7 @@ public class MatrixManager {
 
     public static double dot(double[][] u, double[][] v) {
         if ((u.length == 1 && v.length == 1 && u[0].length == v[0].length) ||
-            (u[0].length == 1 && v[0].length == 1 && u.length == v.length)) {
+                (u[0].length == 1 && v[0].length == 1 && u.length == v.length)) {
             double sum = 0;
             if (u.length == 1) {
                 for (int i = 0; i < u[0].length; i++) sum += u[0][i] * v[0][i];
@@ -319,7 +331,7 @@ public class MatrixManager {
 
     private static void checkSameSize(double[][] A, double[][] B) {
         if (A.length != B.length || A[0].length != B[0].length)
-            throw new IllegalArgumentException("Размеры матриц не совпадают");
+            throw new IllegalArgumentException("Размеры матриц не совпадают: " + A.length + "x" + A[0].length + " != " + B.length + "x" + B[0].length);
     }
 
     private static double[][] copy(double[][] A) {
@@ -329,4 +341,4 @@ public class MatrixManager {
             System.arraycopy(A[i], 0, B[i], 0, cols);
         return B;
     }
-                    }
+}
